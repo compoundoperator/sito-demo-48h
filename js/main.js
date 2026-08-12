@@ -143,18 +143,28 @@
     var items = document.querySelectorAll("[data-reveal]");
     if (!items.length) return;
 
+    /* Senza IntersectionObserver o con reduced-motion: il contenuto resta
+       visibile di default (vedi css/style.css) — non applichiamo mai la
+       classe che lo nasconderebbe, quindi non c'è nulla da rivelare. */
     if (prefersReducedMotion.matches || !("IntersectionObserver" in window)) {
-      items.forEach(function (el) {
-        el.classList.add("is-visible");
-      });
       return;
+    }
+
+    var REVEAL_WATCHDOG_MS = 4000; // più lungo di qualunque reveal naturale via scroll
+
+    function reveal(el) {
+      if (el.__revealTimer) {
+        window.clearTimeout(el.__revealTimer);
+        el.__revealTimer = null;
+      }
+      el.classList.add("is-visible");
     }
 
     var observer = new IntersectionObserver(
       function (entries, obs) {
         entries.forEach(function (entry) {
           if (entry.isIntersecting) {
-            entry.target.classList.add("is-visible");
+            reveal(entry.target);
             obs.unobserve(entry.target);
           }
         });
@@ -163,6 +173,14 @@
     );
 
     items.forEach(function (el) {
+      el.classList.add("reveal-pending");
+      /* Rete di sicurezza per-elemento: se per qualche motivo l'observer
+         non scatta mai per QUESTO elemento, solo questo elemento viene
+         forzato visibile — il resto della pagina continua a rivelarsi
+         normalmente via scroll (nessun timeout globale che spegne l'effetto). */
+      el.__revealTimer = window.setTimeout(function () {
+        reveal(el);
+      }, REVEAL_WATCHDOG_MS);
       observer.observe(el);
     });
   }

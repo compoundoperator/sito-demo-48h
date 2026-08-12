@@ -1318,19 +1318,25 @@ body.menu-open {
 
 /* ---------- 16. Scroll reveal ---------- */
 
-[data-reveal] {
+/*
+  [data-reveal] è visibile di default: il contenuto non dipende mai da JS
+  per esistere visivamente (no-JS, crawler, stampa, screenshot istantanei).
+  Solo la classe .reveal-pending, aggiunta via JS quando IntersectionObserver
+  è disponibile, nasconde temporaneamente l'elemento prima della rivelazione.
+*/
+[data-reveal].reveal-pending {
   opacity: 0;
   transform: translateY(16px);
   transition: opacity 640ms var(--ease-out), transform 640ms var(--ease-out);
 }
 
-[data-reveal].is-visible {
+[data-reveal].reveal-pending.is-visible {
   opacity: 1;
   transform: translateY(0);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  [data-reveal] {
+  [data-reveal].reveal-pending {
     opacity: 1;
     transform: none;
     transition: none;
@@ -1344,5 +1350,12 @@ body.menu-open {
   .site-header,
   .mobile-menu {
     display: none !important;
+  }
+
+  /* rete di sicurezza indipendente: il contenuto è sempre completo in stampa */
+  [data-reveal].reveal-pending {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
   }
 }
