@@ -1,20 +1,26 @@
 /*
-  Luce Beauty Studio — sito dimostrativo
-  JavaScript vanilla, nessuna dipendenza esterna.
+  templates/shared/js/base.js — Landing Factory
+  JavaScript vanilla condiviso da tutte le famiglie di template.
+  Nessuna dipendenza esterna. Nessuna logica di scelta di
+  famiglia/categoria/preset: quella resta interamente lato build (Node).
+
+  Configurazione per-attività iniettata a build time in window.__SITE__
+  (vedi scripts/build.js), già validata/normalizzata server-side:
+    {
+      mode: "TEMPLATE_DEMO" | "PRIVATE_DEMO" | "PRODUCTION",
+      whatsappNumber: "393510000000" | null,   // cifre già validate, o null
+      whatsappDefaultMessage: "..." | null,
+      whatsappDemoText: "..."
+    }
+  Finché whatsappNumber è null (sempre il caso in TEMPLATE_DEMO/PRIVATE_DEMO,
+  e in PRODUCTION senza un numero valido), ogni CTA mostra un avviso
+  dimostrativo invece di aprire un link reale — mai un link rotto.
 */
 
 (function () {
   "use strict";
 
-  /* ---------- Configurazione WhatsApp (demo) ----------
-     In produzione: valorizzare "number" con il numero reale del cliente
-     (solo cifre, con prefisso internazionale, es. "39XXXXXXXXXX").
-     Finché "number" resta vuoto, ogni CTA WhatsApp mostra un avviso
-     dimostrativo invece di aprire un link reale. */
-  var WHATSAPP_CONFIG = {
-    number: "",
-    message: "Ciao! Vorrei prenotare un appuntamento da Luce Beauty Studio."
-  };
+  var SITE = window.__SITE__ || {};
 
   var prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
@@ -117,17 +123,15 @@
     }
 
     function openWhatsapp(message) {
-      if (WHATSAPP_CONFIG.number) {
-        var url =
-          "https://wa.me/" +
-          WHATSAPP_CONFIG.number +
-          "?text=" +
-          encodeURIComponent(message || WHATSAPP_CONFIG.message);
+      if (SITE.whatsappNumber) {
+        var text = message || SITE.whatsappDefaultMessage || "";
+        var url = "https://wa.me/" + SITE.whatsappNumber + (text ? "?text=" + encodeURIComponent(text) : "");
         window.open(url, "_blank", "noopener");
         return;
       }
       showToast(
-        "Funzione dimostrativa — nessun messaggio verrà inviato. Nella versione reale questo pulsante apre WhatsApp."
+        SITE.whatsappDemoText ||
+          "Funzione dimostrativa — nessun messaggio verrà inviato. Nella versione reale questo pulsante apre WhatsApp."
       );
     }
 

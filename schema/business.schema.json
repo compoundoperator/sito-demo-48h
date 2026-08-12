@@ -1,0 +1,210 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://landing-factory.local/schema/business.schema.json",
+  "title": "Business data file",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["category", "template_id", "preset_id", "lead_id", "priority", "mode", "business"],
+  "definitions": {
+    "contentOrigin": {
+      "type": "string",
+      "enum": ["fictional_demo", "verified_public", "official_business_channel", "client_provided"]
+    },
+    "privateDemoStatus": {
+      "type": "string",
+      "enum": ["approved_for_private_demo", "rejected", "unknown", "not_applicable"]
+    },
+    "publicationStatus": {
+      "type": "string",
+      "enum": ["approved_for_publication", "pending", "rejected", "not_applicable"]
+    },
+    "nullableString": { "type": ["string", "null"] }
+  },
+  "properties": {
+    "category": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+    "template_id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+    "preset_id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+    "lead_id": { "type": "string", "minLength": 1 },
+    "priority": { "type": "string", "enum": ["low", "medium", "high"] },
+    "source_file": { "$ref": "#/definitions/nullableString" },
+    "source_row": { "type": ["integer", "null"] },
+    "mode": { "type": "string", "enum": ["TEMPLATE_DEMO", "PRIVATE_DEMO", "PRODUCTION"] },
+
+    "business": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "slug", "content_origin"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "slug": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+        "logo": { "$ref": "#/definitions/nullableString" },
+        "tagline": { "$ref": "#/definitions/nullableString" },
+        "intro": { "$ref": "#/definitions/nullableString" },
+        "address": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "properties": {
+            "line": { "type": "string" }
+          }
+        },
+        "hours": { "$ref": "#/definitions/nullableString" },
+        "phone_display": { "$ref": "#/definitions/nullableString" },
+        "eyebrow": { "$ref": "#/definitions/nullableString" },
+        "trust_stats": {
+          "type": ["array", "null"],
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["value", "label"],
+            "properties": {
+              "value": { "type": "string", "minLength": 1 },
+              "label": { "type": "string", "minLength": 1 }
+            }
+          }
+        },
+        "whatsapp": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "properties": {
+            "number": { "$ref": "#/definitions/nullableString" },
+            "default_message": { "$ref": "#/definitions/nullableString" }
+          }
+        },
+        "social": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "properties": {
+            "instagram": { "$ref": "#/definitions/nullableString" },
+            "facebook": { "$ref": "#/definitions/nullableString" }
+          }
+        },
+        "content_origin": { "$ref": "#/definitions/contentOrigin" },
+        "source_url": { "$ref": "#/definitions/nullableString" },
+        "source_channel": { "$ref": "#/definitions/nullableString" },
+        "captured_at": { "$ref": "#/definitions/nullableString" },
+        "private_demo_status": { "$ref": "#/definitions/privateDemoStatus" },
+        "publication_status": { "$ref": "#/definitions/publicationStatus" },
+        "internal_notes": { "$ref": "#/definitions/nullableString" },
+        "canonical_url": { "$ref": "#/definitions/nullableString" }
+      }
+    },
+
+    "services": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "description": { "$ref": "#/definitions/nullableString" },
+          "price_from": { "type": ["number", "null"] },
+          "price_note": { "$ref": "#/definitions/nullableString" },
+          "icon": { "$ref": "#/definitions/nullableString" }
+        }
+      }
+    },
+
+    "strengths": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["title"],
+        "properties": {
+          "title": { "type": "string", "minLength": 1 },
+          "description": { "$ref": "#/definitions/nullableString" }
+        }
+      }
+    },
+
+    "atmosfera": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["title"],
+        "properties": {
+          "title": { "type": "string", "minLength": 1 },
+          "description": { "$ref": "#/definitions/nullableString" }
+        }
+      }
+    },
+
+    "photos": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "local_file", "content_origin", "alt_text"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+          "local_file": { "type": "string", "minLength": 1 },
+          "usage": { "$ref": "#/definitions/nullableString" },
+          "alt_text": { "type": "string", "minLength": 1 },
+          "contains_recognizable_people": { "type": "boolean" },
+          "contains_recognizable_minors": { "type": "boolean" },
+          "consent_confirmed": { "type": "boolean" },
+          "content_origin": { "$ref": "#/definitions/contentOrigin" },
+          "source_url": { "$ref": "#/definitions/nullableString" },
+          "source_channel": { "$ref": "#/definitions/nullableString" },
+          "captured_at": { "$ref": "#/definitions/nullableString" },
+          "private_demo_status": { "$ref": "#/definitions/privateDemoStatus" },
+          "publication_status": { "$ref": "#/definitions/publicationStatus" },
+          "internal_notes": { "$ref": "#/definitions/nullableString" }
+        }
+      }
+    },
+
+    "reviews": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["text", "author", "content_origin"],
+        "properties": {
+          "text": { "type": "string", "minLength": 1 },
+          "author": { "type": "string", "minLength": 1 },
+          "rating": { "type": ["number", "null"], "minimum": 1, "maximum": 5 },
+          "platform": { "$ref": "#/definitions/nullableString" },
+          "content_origin": { "$ref": "#/definitions/contentOrigin" },
+          "source_url": { "$ref": "#/definitions/nullableString" },
+          "source_channel": { "$ref": "#/definitions/nullableString" },
+          "captured_at": { "$ref": "#/definitions/nullableString" },
+          "private_demo_status": { "$ref": "#/definitions/privateDemoStatus" },
+          "publication_status": { "$ref": "#/definitions/publicationStatus" },
+          "internal_notes": { "$ref": "#/definitions/nullableString" }
+        }
+      }
+    },
+
+    "faq": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["question", "answer"],
+        "properties": {
+          "question": { "type": "string", "minLength": 1 },
+          "answer": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+
+    "contact_form": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "properties": {
+        "endpoint": { "$ref": "#/definitions/nullableString" }
+      }
+    },
+
+    "disclaimers": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "properties": {
+        "demo_banner": { "$ref": "#/definitions/nullableString" }
+      }
+    }
+  }
+}

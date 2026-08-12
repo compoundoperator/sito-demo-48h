@@ -1,0 +1,203 @@
+"use strict";
+
+var test = require("node:test");
+var assert = require("node:assert/strict");
+var path = require("path");
+
+var esc = require("./security/escape.js");
+var url = require("./security/url.js");
+var paths = require("./security/paths.js");
+
+// ---------- escape.js ----------
+
+test("escapeHtml neutralizza HTML injection", function () {
+  var out = esc.escapeHtml('<script>alert(1)</script>');
+  assert.equal(out.indexOf("<script>"), -1);
+  assert.equal(out, "&lt;script&gt;alert(1)&lt;/script&gt;");
+});
+
+test("escapeHtml neutralizza chiusura anticipata di tag", function () {
+  var out = esc.escapeHtml('</div><img src=x onerror=alert(1)>');
+  assert.ok(out.indexOf("</div>") === -1);
+  assert.ok(out.indexOf("<img") === -1);
+});
+
+test("escapeAttr neutralizza attribute injection (uscita da valore quotato)", function () {
+  var malicious = '" onmouseover="alert(1)';
+  var out = esc.escapeAttr(malicious);
+  assert.equal(out.indexOf('"'), -1);
+});
+
+test("escapeHtml gestisce null/undefined/stringa vuota senza eccezioni", function () {
+  assert.equal(esc.escapeHtml(null), "");
+  assert.equal(esc.escapeHtml(undefined), "");
+  assert.equal(esc.escapeHtml(""), "");
+});
+
+test("safeJsonForScriptTag impedisce la chiusura del tag <script>", function () {
+  var payload = { x: "</script><script>alert(1)</script>" };
+  var out = esc.safeJsonForScriptTag(payload);
+  assert.equal(out.indexOf("</script>"), -1);
+  assert.equal(out.indexOf("<script>"), -1);
+  // deve restare JSON valido dopo aver invertito gli escape unicode
+  var restored = JSON.parse(out.replace(/\\u003c/g, "<").replace(/\\u003e/g, ">").replace(/\\u0026/g, "&"));
+  assert.equal(restored.x, payload.x);
+});
+
+// ---------- url.js: URL pericolosi (tutti i contesti) ----------
+
+var dangerousUrls = [
+  "javascript:alert(1)",
+  "JavaScript:alert(1)",
+  "data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==",
+  "vbscript:msgbox(1)",
+  "file:///etc/passwd",
+  "//evil.example.com/steal",
+  "not a url",
+  "",
+  null,
+  undefined
+];
+
+test("sanitizeSourceUrl rifiuta ogni protocollo/valore pericoloso", function () {
+  dangerousUrls.forEach(function (u) {
+    assert.equal(url.sanitizeSourceUrl(u), null, "doveva essere rifiutato: " + u);
+  });
+});
+
+test("sanitizeSocialUrl rifiuta ogni protocollo/valore pericoloso", function () {
+  dangerousUrls.forEach(function (u) {
+    assert.equal(url.sanitizeSocialUrl(u), null);
+  });
+});
+
+test("sanitizeMapUrl rifiuta ogni protocollo/valore pericoloso", function () {
+  dangerousUrls.forEach(function (u) {
+    assert.equal(url.sanitizeMapUrl(u), null);
+  });
+});
+
+test("sanitizeSourceUrl accetta http/https assoluti validi", function () {
+  assert.equal(url.sanitizeSourceUrl("https://example.com/recensione/1"), "https://example.com/recensione/1");
+  assert.equal(url.sanitizeSourceUrl("http://example.com/x"), "http://example.com/x");
+});
+
+test("sanitizeCanonicalUrl accetta solo https (rifiuta http)", function () {
+  assert.equal(url.sanitizeCanonicalUrl("https://cliente.example/"), "https://cliente.example/");
+  assert.equal(url.sanitizeCanonicalUrl("http://cliente.example/"), null);
+});
+
+test("sanitizeFormEndpoint accetta solo https (rifiuta http)", function () {
+  assert.equal(url.sanitizeFormEndpoint("https://forms.example.com/submit"), "https://forms.example.com/submit");
+  assert.equal(url.sanitizeFormEndpoint("http://forms.example.com/submit"), null);
+});
+
+dangerousUrls.forEach(function (u) {
+  test("sanitizeCanonicalUrl rifiuta valore pericoloso: " + String(u), function () {
+    assert.equal(url.sanitizeCanonicalUrl(u), null);
+  });
+  test("sanitizeFormEndpoint rifiuta valore pericoloso: " + String(u), function () {
+    assert.equal(url.sanitizeFormEndpoint(u), null);
+  });
+});
+
+test("URL con credenziali incorporate viene rifiutato", function () {
+  assert.equal(url.sanitizeSourceUrl("https://user:pass@example.com/"), null);
+});
+
+// ---------- url.js: email / telefono / whatsapp ----------
+
+test("sanitizeEmail accetta indirizzi validi e rifiuta quelli malformati", function () {
+  assert.equal(url.sanitizeEmail("info@esempio.it"), "info@esempio.it");
+  assert.equal(url.sanitizeEmail("non-una-email"), null);
+  assert.equal(url.sanitizeEmail("a@b"), null);
+  assert.equal(url.sanitizeEmail('"<script>"@example.com'), null);
+});
+
+test("buildMailto genera mailto: solo dopo validazione", function () {
+  assert.equal(url.buildMailto("info@esempio.it"), "mailto:info@esempio.it");
+  assert.equal(url.buildMailto("javascript:alert(1)@example.com"), null);
+});
+
+test("normalizePhoneForTel accetta un numero valido e lo normalizza", function () {
+  assert.equal(url.normalizePhoneForTel("+39 06 1234567"), "+39061234567");
+});
+
+test("normalizePhoneForTel rifiuta telefono non valido", function () {
+  assert.equal(url.normalizePhoneForTel("non un numero"), null);
+  assert.equal(url.normalizePhoneForTel("123"), null); // troppo corto
+});
+
+test("buildTel non genera link con input pericoloso", function () {
+  assert.equal(url.buildTel("javascript:alert(1)"), null);
+});
+
+test("normalizeWhatsappNumber accetta solo cifre e rimuove il + iniziale", function () {
+  assert.equal(url.normalizeWhatsappNumber("+39 351 000 0000".replace(/\s/g, "")), "393510000000");
+  assert.equal(url.normalizeWhatsappNumber("+393510000000"), "393510000000");
+  assert.equal(url.normalizeWhatsappNumber("393510000000"), "393510000000");
+});
+
+test("normalizeWhatsappNumber rifiuta valori non numerici o implausibili", function () {
+  assert.equal(url.normalizeWhatsappNumber("chiamami"), null);
+  assert.equal(url.normalizeWhatsappNumber("123"), null);
+  assert.equal(url.normalizeWhatsappNumber("javascript:alert(1)"), null);
+  assert.equal(url.normalizeWhatsappNumber(""), null);
+  assert.equal(url.normalizeWhatsappNumber(null), null);
+});
+
+test("buildWhatsappLink costruisce un link wa.me solo con numero valido", function () {
+  var link = url.buildWhatsappLink("+393510000000", "Ciao!");
+  assert.equal(link, "https://wa.me/393510000000?text=Ciao!");
+  assert.equal(url.buildWhatsappLink("numero non valido", "Ciao"), null);
+});
+
+// ---------- paths.js ----------
+
+test("isValidId accetta slug/template_id/preset_id validi", function () {
+  assert.equal(paths.isValidId("beauty-wellness-v1"), true);
+  assert.equal(paths.isValidId("luce-beauty-studio"), true);
+  assert.equal(paths.isValidId("default"), true);
+});
+
+test("isValidId rifiuta slug non validi (path traversal, maiuscole, spazi, vuoto)", function () {
+  [
+    "../../etc/passwd",
+    "..",
+    "Beauty-Wellness",
+    "beauty wellness",
+    "beauty/../../etc",
+    "",
+    null,
+    undefined,
+    "beauty_wellness", // underscore non ammesso dalla regola dichiarata
+    "a".repeat(200)
+  ].forEach(function (v) {
+    assert.equal(paths.isValidId(v), false, "doveva essere rifiutato: " + v);
+  });
+});
+
+test("resolveDossierAsset rifiuta path traversal (../)", function () {
+  var businessDir = path.resolve(__dirname, "..", "businesses", "luce-beauty-studio");
+  assert.equal(paths.resolveDossierAsset(businessDir, "../../etc/passwd"), null);
+  assert.equal(paths.resolveDossierAsset(businessDir, "photos/../../../etc/passwd"), null);
+  assert.equal(paths.resolveDossierAsset(businessDir, "..\\..\\windows\\system32"), null);
+});
+
+test("resolveDossierAsset rifiuta percorsi assoluti", function () {
+  var businessDir = path.resolve(__dirname, "..", "businesses", "luce-beauty-studio");
+  assert.equal(paths.resolveDossierAsset(businessDir, "/etc/passwd"), null);
+  assert.equal(paths.resolveDossierAsset(businessDir, "C:\\Windows\\System32"), null);
+});
+
+test("resolveDossierAsset rifiuta forme codificate di path traversal", function () {
+  var businessDir = path.resolve(__dirname, "..", "businesses", "luce-beauty-studio");
+  assert.equal(paths.resolveDossierAsset(businessDir, "%2e%2e/%2e%2e/etc/passwd"), null);
+});
+
+test("resolveDossierAsset accetta un percorso relativo valido dentro dossier/", function () {
+  var businessDir = path.resolve(__dirname, "..", "businesses", "luce-beauty-studio");
+  var resolved = paths.resolveDossierAsset(businessDir, "photos/hero.jpg");
+  assert.ok(resolved);
+  assert.equal(resolved.indexOf(path.join(businessDir, "dossier")), 0);
+});

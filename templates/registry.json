@@ -1,0 +1,11 @@
+{
+  "beauty-wellness-v1": {
+    "render": "templates/beauty-wellness-v1/render.js",
+    "css": [
+      "templates/shared/css/base.css",
+      "templates/beauty-wellness-v1/css/theme.css"
+    ],
+    "js": ["templates/shared/js/base.js"],
+    "presets": ["default"]
+  }
+}

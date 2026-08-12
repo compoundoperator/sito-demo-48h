@@ -1,0 +1,159 @@
+# Luce Beauty Studio — attività interamente immaginaria (TEMPLATE_DEMO).
+# Nessun dato reale: nomi, prezzi, recensioni e recapiti sono di fantasia,
+# a scopo dimostrativo del template beauty-wellness-v1.
+
+category: beauty-wellness
+template_id: beauty-wellness-v1
+preset_id: default
+lead_id: "LUCE-DEMO-001"
+priority: high
+source_file: null
+source_row: null
+
+mode: TEMPLATE_DEMO
+
+business:
+  name: "Luce Beauty Studio"
+  slug: "luce-beauty-studio"
+  logo: null
+  tagline: "Il tuo momento di bellezza, nel cuore di Roma"
+  intro: >-
+    Trattamenti viso e corpo pensati come un rituale, in un ambiente curato
+    nei minimi dettagli. Luce Beauty Studio unisce competenza professionale
+    e attenzione autentica per la persona.
+  address:
+    line: "Zona centro storico, Roma — indirizzo dimostrativo, nessun civico reale"
+  hours: "Lun–Sab, 9:30–19:30 (orari dimostrativi)"
+  phone_display: null
+  eyebrow: "Centro estetico · Roma"
+  trust_stats:
+    - value: "6"
+      label: "trattamenti in menu"
+    - value: "100%"
+      label: "prodotti professionali"
+    - value: "1:1"
+      label: "attenzione dedicata"
+  whatsapp:
+    number: null
+    default_message: "Ciao! Vorrei prenotare un appuntamento da Luce Beauty Studio."
+  social:
+    instagram: null
+    facebook: null
+  content_origin: fictional_demo
+  source_url: null
+  source_channel: null
+  captured_at: null
+  private_demo_status: not_applicable
+  publication_status: not_applicable
+  internal_notes: "Attività di riferimento del template beauty-wellness-v1."
+  canonical_url: null
+
+services:
+  - name: "Trattamenti viso"
+    description: "Pulizia profonda, idratazione e trattamenti mirati per una pelle luminosa e distesa."
+    price_from: 45
+    price_note: "indicativo, demo"
+    icon: icon-viso
+  - name: "Massaggi benessere"
+    description: "Massaggi rilassanti o decontratturanti, su misura per liberare la tensione accumulata."
+    price_from: 55
+    price_note: "indicativo, demo"
+    icon: icon-massaggio
+  - name: "Manicure & Pedicure"
+    description: "Cura delle mani e dei piedi con prodotti professionali, per un risultato curato e naturale."
+    price_from: 30
+    price_note: "indicativo, demo"
+    icon: icon-mani
+  - name: "Trattamenti corpo"
+    description: "Percorsi drenanti, rimodellanti e nutrienti per prendersi cura del corpo a 360 gradi."
+    price_from: 60
+    price_note: "indicativo, demo"
+    icon: icon-corpo
+  - name: "Depilazione"
+    description: "Trattamenti di depilazione professionale, rapidi e delicati sulla pelle."
+    price_from: 20
+    price_note: "indicativo, demo"
+    icon: icon-depilazione
+  - name: "Pacchetti sposa"
+    description: "Percorsi personalizzati nei mesi prima del grande giorno, dalla pelle al relax."
+    price_from: null
+    price_note: "su richiesta, preventivo demo"
+    icon: icon-sposa
+
+strengths:
+  - title: "Prodotti professionali certificati"
+    description: "Selezioniamo linee cosmetiche di qualità, adatte a ogni tipo di pelle, senza compromessi."
+  - title: "Personale qualificato"
+    description: "Un team con formazione continua, che aggiorna competenze e tecniche ogni stagione."
+  - title: "Ambiente riservato e curato"
+    description: "Spazi pensati per il relax, dalla luce naturale ai piccoli dettagli che fanno la differenza."
+  - title: "Prenotazione flessibile"
+    description: "Scrivici quando preferisci: rispondiamo rapidamente per trovare l'orario più comodo per te."
+
+atmosfera:
+  - title: "Luce naturale"
+    description: "Ambienti luminosi durante il giorno, per un'esperienza rilassante fin dal primo sguardo."
+  - title: "Materiali caldi"
+    description: "Legno chiaro, tessuti naturali e dettagli artigianali per un'atmosfera accogliente."
+  - title: "Cura nei dettagli"
+    description: "Dal profumo dell'ambiente alla scelta della musica: ogni elemento è parte del rituale."
+
+photos: []
+# Nessuna fotografia reale per questa attività immaginaria: il dossier
+# resta vuoto e la resa visiva si affida ai placeholder grafici (blob/SVG)
+# del template, senza mai simulare l'esistenza di foto reali.
+
+reviews:
+  - text: "Un'atmosfera curatissima e un trattamento viso davvero rilassante. Sono uscita con la pelle luminosa."
+    author: "Giulia R."
+    rating: 5
+    platform: null
+    content_origin: fictional_demo
+    source_url: null
+    source_channel: null
+    captured_at: null
+    private_demo_status: not_applicable
+    publication_status: not_applicable
+    internal_notes: "Recensione di fantasia per la demo del template — non collegata a nessuna piattaforma reale."
+  - text: "Personale gentile e molto professionale. Prenotare su WhatsApp è comodissimo."
+    author: "Martina F."
+    rating: 5
+    platform: null
+    content_origin: fictional_demo
+    source_url: null
+    source_channel: null
+    captured_at: null
+    private_demo_status: not_applicable
+    publication_status: not_applicable
+    internal_notes: "Recensione di fantasia per la demo del template — non collegata a nessuna piattaforma reale."
+  - text: "Il pacchetto sposa mi ha aiutata ad arrivare al giorno del matrimonio davvero rilassata."
+    author: "Sara T."
+    rating: 5
+    platform: null
+    content_origin: fictional_demo
+    source_url: null
+    source_channel: null
+    captured_at: null
+    private_demo_status: not_applicable
+    publication_status: not_applicable
+    internal_notes: "Recensione di fantasia per la demo del template — non collegata a nessuna piattaforma reale."
+
+faq:
+  - question: "Quali sono gli orari di apertura?"
+    answer: "Indicativamente dal lunedì al sabato, mattina e pomeriggio. Orari dimostrativi: nella versione reale saranno sostituiti con quelli effettivi del centro."
+  - question: "Come posso prenotare un appuntamento?"
+    answer: "Nella versione reale il modo più rapido è scrivere su WhatsApp. In questa demo il pulsante WhatsApp mostra un messaggio dimostrativo."
+  - question: "Quali metodi di pagamento accettate?"
+    answer: "Contanti, carte di credito/debito e principali circuiti contactless (informazione dimostrativa)."
+  - question: "Cosa aspettarmi dalla prima visita?"
+    answer: "Un breve colloquio conoscitivo per capire le tue esigenze, seguito dal trattamento scelto in un ambiente riservato."
+  - question: "Qual è la policy di cancellazione?"
+    answer: "Si consiglia di avvisare con anticipo in caso di imprevisti, così da poter riorganizzare l'agenda (informazione dimostrativa)."
+  - question: "I prodotti utilizzati sono adatti a pelli sensibili?"
+    answer: "Sì, vengono privilegiate linee professionali dermatologicamente testate; in caso di allergie note è utile segnalarlo prima del trattamento."
+
+contact_form:
+  endpoint: null
+
+disclaimers:
+  demo_banner: "Sito dimostrativo — Luce Beauty Studio è un'attività immaginaria creata a scopo illustrativo. Nomi, prezzi, recensioni e recapiti sono di fantasia."
