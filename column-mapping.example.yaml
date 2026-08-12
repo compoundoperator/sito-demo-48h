@@ -1,0 +1,26 @@
+# Esempio di mappatura colonne CSV/Excel -> campi di businesses/<slug>/data.yaml
+# Usato da: node scripts/import-csv.js --file <csv> --mapping column-mapping.example.yaml --row N
+#
+# "constants": valori fissi applicati a OGNI riga importata con questa
+# mappatura (tipicamente perché il file sorgente raccoglie lead di UNA
+# sola categoria/famiglia per volta).
+#
+# "columns": intestazione colonna del CSV -> percorso nel data.yaml.
+# Applicata SOLO se la cella non è vuota — colonne assenti o vuote non
+# vengono mai riempite con un valore inventato.
+
+constants:
+  category: beauty-wellness
+  template_id: beauty-wellness-v1
+  preset_id: default
+  mode: PRIVATE_DEMO
+
+columns:
+  "Nome Attività": business.name
+  "Città": business.address.line
+  "Telefono": business.phone_display
+  "Priorità": priority
+  "Servizio 1 Nome": services[0].name
+  "Servizio 1 Prezzo": services[0].price_from
+  "Servizio 2 Nome": services[1].name
+  "Servizio 2 Prezzo": services[1].price_from

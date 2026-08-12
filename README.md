@@ -1,88 +1,186 @@
-# Luce Beauty Studio — sito dimostrativo
+# Landing Factory
 
-Primo sito dimostrativo del servizio **Sito professionale in 48 ore**, rivolto a piccole attività locali che hanno un sito vecchio, poco efficace o inesistente.
+Generatore data-driven di landing page statiche per piccole attività locali,
+per il servizio **Sito professionale in 48 ore**. Nato dalla prima demo
+singola "Luce Beauty Studio" (ancora disponibile, invariata, sul branch
+`claude/luce-beauty-landing-dpsrg9`), ora generalizzato in un motore
+riutilizzabile: **un template master + un file dati per attività**, senza
+duplicare HTML/CSS per ogni cliente.
 
-**Luce Beauty Studio è un centro estetico immaginario.** Nome, indirizzo, orari, prezzi, recensioni e ogni altro contenuto sono di fantasia e servono solo a dimostrare cosa si può realizzare con strumenti di intelligenza artificiale (codice, testi, icone e decorazioni sono stati creati con Claude Code).
+> Guida operativa rapida (regole, divieti, definizione di "done"):
+> vedi **[CLAUDE.md](./CLAUDE.md)**.
 
-## ⚠️ Stato: demo pubblica, non indicizzabile
+## Architettura in breve
 
-Questa è una prima versione dimostrativa, pensata per essere vista ma **non indicizzata dai motori di ricerca**:
-
-- `index.html` include `<meta name="robots" content="noindex, nofollow">`.
-- Non sono presenti `sitemap.xml`, `robots.txt`, canonical URL o dati strutturati JSON-LD: richiederebbero un dominio reale e dati aziendali veri, che in questa fase non esistono.
-- Nessun numero di telefono o WhatsApp reale è presente in pagina: il telefono mostra il testo "Telefono disponibile nella versione reale" e i pulsanti WhatsApp mostrano un avviso dimostrativo (vedi sotto).
-- Il modulo di contatto è solo dimostrativo: non invia né salva alcun dato.
-
-**Checklist da completare prima di una pubblicazione reale (con dominio e dati veri):**
-
-1. Rimuovere `<meta name="robots" content="noindex, nofollow">` da `index.html`.
-2. Aggiungere `<link rel="canonical" href="https://dominio-reale.tld/">`.
-3. Aggiungere uno script JSON-LD `LocalBusiness` con dati reali (nome, indirizzo, telefono, orari) nel `<head>` di `index.html`.
-4. Creare `sitemap.xml` e un `robots.txt` che la referenzi.
-5. Valorizzare `WHATSAPP_CONFIG.number` in `js/main.js` con il numero reale del cliente (attiva automaticamente i link `wa.me` reali al posto dell'avviso demo).
-6. Sostituire indirizzo, telefono, orari e recensioni con i dati reali del cliente.
-7. Sostituire i placeholder visivi (blob/pattern) con fotografie reali o immagini generate con AI — vedi elenco prompt più sotto.
-
-## Struttura del progetto
+Generazione **statica a build-time** (Node): il generatore gira solo lato
+autore. Ogni sito prodotto in `dist/<slug>/` resta HTML/CSS/JS puro,
+senza framework, senza dipendenza da JavaScript per esistere
+visivamente — esattamente come richiesto dal brief originale.
 
 ```
 /
-├── index.html            # markup della landing page (one-page, in italiano)
-├── css/style.css         # unico foglio di stile (custom properties, layout, animazioni)
-├── js/main.js             # JS vanilla: menu mobile, scroll reveal, CTA WhatsApp demo, form demo
-├── assets/
-│   ├── fonts/             # Fraunces + Inter, self-hosted (vedi licenze sotto)
-│   └── svg/                # icone e decorazioni SVG originali
-├── _headers                # header di sicurezza/cache per Cloudflare Pages
-└── README.md
+├── templates/
+│   ├── shared/                 # font, icone, reset, header/nav, bottoni,
+│   │                           # whatsapp flottante, scroll-reveal — condivisi
+│   ├── beauty-wellness-v1/     # unica famiglia implementata
+│   │   ├── render.js           # funzioni di rendering, sezioni condizionali
+│   │   ├── css/theme.css       # stile delle sezioni di questa famiglia
+│   │   └── presets/default/tokens.css  # palette colori
+│   ├── trades-v1/               # FUTURO — solo TODO.md, non implementato
+│   └── retail-local-v1/         # FUTURO — solo TODO.md, non implementato
+│   └── registry.json            # allowlist di template_id/preset_id ammessi
+├── businesses/
+│   ├── luce-beauty-studio/      # TEMPLATE_DEMO — attività immaginaria
+│   └── minimal-beauty-demo/     # attività di prova, sezioni volutamente assenti
+├── schema/business.schema.json  # JSON Schema dei dati (validato con Ajv)
+├── scripts/                     # build, validate, QA, import, sicurezza
+├── fixtures/leads-example.csv   # esempio fittizio per l'importatore
+├── dist/                        # output generato (non versionato)
+└── package.json
 ```
 
-Nessuna build tool: i file sono statici e pronti per essere pubblicati così come sono.
+## Le tre modalità
 
-## Anteprima locale
+| | `TEMPLATE_DEMO` | `PRIVATE_DEMO` | `PRODUCTION` |
+|---|---|---|---|
+| Attività | immaginaria | reale, concept non ufficiale | reale, cliente pagante |
+| Contenuti ammessi | solo dichiaratamente fittizi | pubblici/canale ufficiale, con fonte registrata | solo materiali approvati |
+| Indicizzabile | no (`noindex`) | no (`noindex`) | solo se dati reali completi e approvati |
+| Deploy | mai automatico | mai automatico | non implementato in questa versione |
 
-Non serve alcuna installazione: bastano file statici serviti da un qualunque web server locale, ad esempio:
+Dettagli completi in [CLAUDE.md](./CLAUDE.md).
+**`noindex,nofollow` non è un controllo di accesso**: impedisce
+l'indicizzazione, non nasconde la pagina a chi ha l'URL diretto. Una vera
+demo privata, in questa fase, resta locale o si condivide via
+screenshot/video — non va pubblicata con un URL raggiungibile.
+
+## Installazione
 
 ```bash
-cd sito-demo-48h
+npm install
+```
+
+Dipendenze (bloccate in `package-lock.json`):
+
+| Pacchetto | Uso | Tipo |
+|---|---|---|
+| `js-yaml` | leggere/scrivere `data.yaml` | runtime (build/validate/import) |
+| `ajv` | validazione JSON Schema | runtime (validate) |
+| `sharp` | ridimensionamento/conversione WebP, rimozione EXIF | runtime opzionale — se non installabile, `optimize-images` degrada in modo controllato (mai un originale non ottimizzato copiato in output; in `PRODUCTION` il comando fallisce esplicitamente invece di procedere) |
+
+Playwright (per `npm run qa`) è già disponibile nell'ambiente di sviluppo
+usato per questo progetto; se assente altrove, installarlo separatamente
+(`npm install -D playwright` + browser Chromium).
+
+## Procedura: dalla riga Excel/CSV alla landing pronta
+
+1. **Import scaffold** da una riga del foglio (mai automatico al 100%: crea solo una bozza):
+   ```bash
+   node scripts/import-csv.js --file fixtures/leads-example.csv --list --priority high
+   node scripts/import-csv.js --file fixtures/leads-example.csv \
+     --mapping column-mapping.example.yaml --row 1
+   ```
+   Crea `businesses/<slug>/data.yaml` con i soli campi presenti nel foglio.
+   I campi di provenienza/modalità che nessuna colonna può dedurre
+   restano `TODO_COMPLETARE`: `npm run validate` fallirà finché non
+   vengono completati a mano — **mai un dato inventato**.
+2. **Completare a mano** `data.yaml` (provenienza, modalità, servizi,
+   punti di forza, FAQ, contatti...) e curare `dossier/photos/` +
+   `dossier/reviews/` con i materiali reali forniti, se presenti.
+3. **Validare**:
+   ```bash
+   node scripts/validate.js businesses/<slug>
+   ```
+4. **Ottimizzare le immagini** (solo quelle idonee secondo le regole di provenienza/consenso):
+   ```bash
+   node scripts/optimize-images.js businesses/<slug>
+   ```
+5. **Generare** la landing:
+   ```bash
+   node scripts/build.js businesses/<slug>
+   # oppure, senza argomenti, genera tutte le attività in businesses/
+   node scripts/build.js
+   ```
+6. **QA automatica** (screenshot, console, overflow, no-JS, reduced-motion, stampa):
+   ```bash
+   node scripts/qa-screenshots.js dist/<slug>
+   ```
+7. **Revisione umana** degli screenshot in `qa-output/<slug>/`.
+8. Pubblicazione: **da fare manualmente e solo su autorizzazione esplicita** —
+   nessun passo di questo generatore pubblica nulla automaticamente.
+
+## Script npm
+
+```bash
+npm test                                          # tutti i test automatici (node:test)
+npm run validate -- businesses/<slug>
+npm run build [-- businesses/<slug>]              # senza argomento: tutte le attività
+npm run optimize-images -- businesses/<slug>
+npm run qa -- dist/<slug>
+npm run import:scaffold -- --file <csv> --list --priority high
+npm run import:scaffold -- --file <csv> --mapping <mapping.yaml> --row N
+```
+
+## Anteprima locale di una landing generata
+
+```bash
+cd dist/<slug>
 python3 -m http.server 8080
 # poi apri http://localhost:8080
 ```
 
-(Aprire `index.html` direttamente da file system funziona per lo più, ma un piccolo web server evita eventuali limitazioni del browser su richieste locali.)
+## Creare una nuova landing fittizia di prova (senza Excel)
 
-## Pubblicazione su Cloudflare Pages
+Basta un nuovo file dati, senza passare dall'importatore:
 
-1. Collega il repository a un nuovo progetto Cloudflare Pages.
-2. Framework preset: **None** (sito statico).
-3. Build command: *(vuoto — nessuna build necessaria)*.
-4. Output directory: `/` (radice del repository).
-5. Deploy: Cloudflare pubblicherà i file così come sono, incluso il file `_headers` per gli header di sicurezza/cache.
+```bash
+mkdir -p businesses/mia-prova/dossier/photos businesses/mia-prova/dossier/reviews
+cp businesses/minimal-beauty-demo/data.yaml businesses/mia-prova/data.yaml
+# modificare business.name, business.slug, servizi, ecc.
+node scripts/validate.js businesses/mia-prova
+node scripts/build.js businesses/mia-prova
+```
+
+## Sicurezza del generatore
+
+- Ogni stringa da dati che finisce nell'HTML passa da
+  `scripts/security/escape.js` (`escapeHtml`/`escapeAttr`/JSON-LD sicuro).
+- Ogni URL passa da un validatore specifico per contesto in
+  `scripts/security/url.js` (mai un `sanitizeUrl` generico): rifiuta
+  sempre `javascript:`, `data:`, `vbscript:`, credenziali incorporate.
+- `template_id`/`preset_id`/`slug`/percorsi locali delle foto passano da
+  `scripts/security/paths.js` (allowlist stretta + anti path-traversal,
+  incluse forme codificate/backslash).
+- `templates/registry.json` è l'unica fonte ammessa per risolvere
+  template e preset: un valore non registrato interrompe il build con
+  errore, mai un fallback silenzioso.
+- 97 test automatici (`npm test`) coprono queste regole end-to-end,
+  incluso il rendering reale (non solo le singole utility).
+
+## Limiti noti
+
+- Il validatore certifica struttura e coerenza dei dati, **non** la
+  veridicità dei contenuti né la titolarità reale di foto/consensi:
+  responsabilità dell'operatore umano (vedi CLAUDE.md).
+- L'importatore CSV/Excel resta uno scaffold: foto e recensioni restano
+  sempre da curare a mano, mai importate automaticamente.
+- Nessuna vera riservatezza tecnica per `PRIVATE_DEMO` in questa fase:
+  solo anteprima locale o materiale screenshot/video.
+- `trades-v1` e `retail-local-v1` sono solo placeholder documentati, non
+  implementati.
+- Nessuna pipeline di deploy automatico è implementata: la pubblicazione
+  resta un passo manuale, esplicitamente autorizzato.
 
 ## Font: fonte e licenza
 
-I font **Fraunces** e **Inter** sono stati scaricati dalla rete ufficiale di distribuzione di Google Fonts (`fonts.gstatic.com`), generata dai repository ufficiali dei due progetti, e sono distribuiti sotto **SIL Open Font License 1.1**. I file di licenza originali sono inclusi in:
+**Fraunces** e **Inter** sono scaricati dalla rete ufficiale di
+distribuzione di Google Fonts (`fonts.gstatic.com`), generata dai
+repository ufficiali dei due progetti, e distribuiti sotto **SIL Open
+Font License 1.1** (`templates/shared/assets/fonts/*/OFL.txt`). Nessun
+file font è stato creato, modificato o simulato.
 
-- `assets/fonts/fraunces/OFL.txt`
-- `assets/fonts/inter/OFL.txt`
+## Baseline originale (sito singolo)
 
-I file `.woff2` in `assets/fonts/` sono copie reali e integre di quelli distribuiti ufficialmente: nessun file font è stato creato, modificato o simulato. Se in un ambiente senza accesso di rete i font non fossero disponibili, il CSS ricade automaticamente su uno stack di font di sistema (vedi commento in cima a `css/style.css`).
-
-## Immagini AI da generare per le versioni future
-
-Nella v1 tutti gli elementi visivi sono forme geometriche/blob create in SVG puro (nessuna immagine scaricata da internet). Per una versione successiva, ecco un elenco di immagini da generare con uno strumento AI a scelta, con prompt suggeriti:
-
-1. **Hero — ambiente del centro**: "Interno luminoso ed elegante di un centro estetico contemporaneo a Roma, luce naturale calda del tardo pomeriggio, palette terracotta/crema/legno chiaro, dettagli architettonici mediterranei minimal, nessuna persona in primo piano, spazio negativo a sinistra per testo, fotografia editoriale, 35mm, bassa profondità di campo."
-2. **Atmosfera — trattamento viso**: "Primo piano di mani professionali che applicano un trattamento viso con crema naturale, luce soffusa laterale, ambientazione spa elegante minimalista, palette calda coerente col brand, nessun volto identificabile, stile rivista lifestyle."
-3. **Atmosfera — still life prodotti**: "Composizione di prodotti cosmetici non brandizzati, boccette ambrate e crema-terracotta su pietra chiara, luce naturale morbida, ombre lunghe, stile minimal editoriale."
-4. **Servizi — sala massaggi**: "Sala massaggi vuota, elegante, lettino in lino naturale, piante verdi, luce calda soffusa, palette terracotta/crema, stile interior design wellness."
-5. **Reception/dettaglio**: "Dettaglio reception boutique, fiori secchi, ceramica artigianale, luce naturale, nessuna persona, stile minimal mediterraneo."
-6. **Immagine social (Open Graph)**: variante orizzontale 1200×630 dell'immagine hero, con il wordmark del brand integrato.
-
-Per ciascuna immagine: nessun volto riconoscibile o persona reale, palette coerente con i colori del brand (vedi variabili CSS in `css/style.css`), formato WebP con fallback JPEG, `alt` descrittivo in italiano.
-
-## Licenze e provenienza dei contenuti
-
-- Codice, testi, struttura e icone/decorazioni SVG: creati originariamente per questo progetto.
-- Font: Fraunces e Inter, SIL Open Font License 1.1 (vedi sopra).
-- Nessuna fotografia, template o materiale di terzi protetto da copyright è stato utilizzato.
+La landing dimostrativa originale "Luce Beauty Studio" come sito
+singolo (pre-factory) resta intatta e disponibile sul branch
+`claude/luce-beauty-landing-dpsrg9`, non toccato da questo lavoro.

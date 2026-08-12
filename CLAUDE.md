@@ -4,8 +4,6 @@ Guida operativa per chi (persona o agente AI) lavora su questo repository.
 Questo file è una guida, **non sostituisce i controlli tecnici** in
 `scripts/validate.js` e nei test automatici.
 
-> Stato: prima versione (Fase B). Verrà completata in Fase D.
-
 ## Architettura
 
 - Generatore **statico a build-time** (Node), mai un framework runtime nel
@@ -26,13 +24,16 @@ Questo file è una guida, **non sostituisce i controlli tecnici** in
 ## Comandi principali
 
 ```bash
-npm test                                    # tutti i test automatici (node:test)
-npm run validate -- businesses/<slug>       # valida un'attività
-npm run build -- businesses/<slug>          # genera dist/<slug>/ (o senza argomento: tutte)
-npm run optimize-images -- businesses/<slug> # ottimizza le foto idonee
-npm run qa -- dist/<slug>                   # screenshot + controlli automatici
-npm run import:scaffold -- --row N ...      # scaffold da riga CSV/Excel (vedi Fase D)
+npm test                                          # tutti i test automatici (node:test) — 97 test
+npm run validate -- businesses/<slug>             # valida un'attività
+npm run build [-- businesses/<slug>]              # genera dist/<slug>/ (senza argomento: tutte)
+npm run optimize-images -- businesses/<slug>      # ottimizza le foto idonee (resize+webp+strip EXIF)
+npm run qa -- dist/<slug>                         # screenshot + controlli automatici
+npm run import:scaffold -- --file <csv> --list --priority high   # elenca righe per priorità
+npm run import:scaffold -- --file <csv> --mapping <m.yaml> --row N  # crea scaffold da riga CSV
 ```
+
+Procedura completa passo-passo: vedi [README.md](./README.md).
 
 ## Branch da NON toccare mai
 
@@ -105,6 +106,22 @@ Questa verifica resta responsabilità dell'operatore umano.
 3. `npm run qa -- dist/<slug>` passa (console pulita, nessun overflow,
    sezioni attese visibili, nessuna sezione mancante lascia buchi).
 4. Revisione umana degli screenshot generati.
+
+## Dipendenze
+
+Bloccate in `package-lock.json`: `js-yaml` (lettura/scrittura `data.yaml`),
+`ajv` (validazione JSON Schema), `sharp` (ottimizzazione immagini —
+installata e verificata funzionante in questo ambiente). Il parsing CSV
+è manuale, senza libreria dedicata (piccolo parser in
+`scripts/import-csv.js`), per non aggiungere una dipendenza non
+necessaria.
+
+**Se `sharp` non è disponibile in un altro ambiente**:
+`scripts/optimize-images.js` rileva l'errore di import e non ottimizza
+né copia alcuna foto (mai un originale non ottimizzato/con EXIF copiato
+silenziosamente nell'output). In `TEMPLATE_DEMO`/`PRIVATE_DEMO` stampa
+un avviso e le foto ricadono sul placeholder grafico; in `PRODUCTION` il
+comando fallisce con errore esplicito invece di procedere.
 
 ## Deploy
 
