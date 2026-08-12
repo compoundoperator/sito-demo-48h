@@ -1,0 +1,60 @@
+# Attività di prova completamente fittizia (TEMPLATE_DEMO), volutamente
+# minimale: nessuna FAQ, nessuna recensione, nessun logo, nessun punto di
+# forza, nessuna sezione atmosfera, nessun indirizzo. Serve a verificare
+# che il template ometta correttamente le sezioni prive di dati, senza
+# lasciare spazi vuoti, titoli orfani o link di navigazione rotti.
+
+category: beauty-wellness
+template_id: beauty-wellness-v1
+preset_id: default
+lead_id: "TEST-MINIMAL-001"
+priority: low
+source_file: null
+source_row: null
+
+mode: TEMPLATE_DEMO
+
+business:
+  name: "Prova Minimal Demo"
+  slug: "minimal-beauty-demo"
+  logo: null
+  tagline: "Landing minimale di prova"
+  intro: null
+  address: null
+  hours: null
+  phone_display: null
+  eyebrow: null
+  trust_stats: null
+  whatsapp:
+    number: null
+    default_message: "Ciao! Vorrei informazioni."
+  social:
+    instagram: null
+    facebook: null
+  content_origin: fictional_demo
+  source_url: null
+  source_channel: null
+  captured_at: null
+  private_demo_status: not_applicable
+  publication_status: not_applicable
+  internal_notes: "Attività di prova per verificare l'omissione delle sezioni prive di dati."
+  canonical_url: null
+
+services:
+  - name: "Servizio di prova"
+    description: "Unico servizio presente in questa attività di prova."
+    price_from: 10
+    price_note: "demo"
+    icon: icon-viso
+
+strengths: []
+atmosfera: []
+photos: []
+reviews: []
+faq: []
+
+contact_form:
+  endpoint: null
+
+disclaimers:
+  demo_banner: "Attività di prova completamente fittizia, usata per verificare il rendering condizionale del template."
