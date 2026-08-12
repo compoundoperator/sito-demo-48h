@@ -138,51 +138,82 @@
     });
   }
 
-  /* ---------- Scroll reveal ---------- */
+  /* ---------- Scroll reveal ----------
+     Nessun timer: la rivelazione è guidata esclusivamente da
+     IntersectionObserver (meccanismo primario) più un controllo di
+     sicurezza non temporale su scroll/resize basato su
+     getBoundingClientRect, per gli elementi ancora in attesa. */
   function initScrollReveal() {
-    var items = document.querySelectorAll("[data-reveal]");
+    var items = Array.prototype.slice.call(document.querySelectorAll("[data-reveal]"));
     if (!items.length) return;
 
     /* Senza IntersectionObserver o con reduced-motion: il contenuto resta
        visibile di default (vedi css/style.css) — non applichiamo mai la
-       classe che lo nasconderebbe, quindi non c'è nulla da rivelare. */
+       classe che lo nasconderebbe, quindi non c'è nulla da rivelare e
+       nessun listener di scroll/resize viene registrato. */
     if (prefersReducedMotion.matches || !("IntersectionObserver" in window)) {
       return;
     }
 
-    var REVEAL_WATCHDOG_MS = 4000; // più lungo di qualunque reveal naturale via scroll
+    var pending = new Set(items);
+    var ticking = false;
+
+    function onTransitionEnd(event) {
+      if (event.propertyName !== "opacity") return;
+      var el = event.currentTarget;
+      el.classList.remove("reveal-pending");
+      el.removeEventListener("transitionend", onTransitionEnd);
+    }
 
     function reveal(el) {
-      if (el.__revealTimer) {
-        window.clearTimeout(el.__revealTimer);
-        el.__revealTimer = null;
-      }
+      if (!pending.has(el)) return;
+      pending.delete(el);
+      el.addEventListener("transitionend", onTransitionEnd);
       el.classList.add("is-visible");
+      if (pending.size === 0) {
+        window.removeEventListener("scroll", onScrollOrResize);
+        window.removeEventListener("resize", onScrollOrResize);
+      }
     }
 
     var observer = new IntersectionObserver(
       function (entries, obs) {
         entries.forEach(function (entry) {
           if (entry.isIntersecting) {
-            reveal(entry.target);
             obs.unobserve(entry.target);
+            reveal(entry.target);
           }
         });
       },
-      { threshold: 0.15, rootMargin: "0px 0px -40px 0px" }
+      { threshold: 0.15, rootMargin: "0px 0px -10% 0px" }
     );
+
+    function checkPendingByGeometry() {
+      ticking = false;
+      if (pending.size === 0) return;
+      var vh = window.innerHeight || document.documentElement.clientHeight;
+      Array.prototype.slice.call(pending).forEach(function (el) {
+        var rect = el.getBoundingClientRect();
+        if (rect.top < vh && rect.bottom > 0) {
+          observer.unobserve(el);
+          reveal(el);
+        }
+      });
+    }
+
+    function onScrollOrResize() {
+      if (ticking) return;
+      ticking = true;
+      window.requestAnimationFrame(checkPendingByGeometry);
+    }
 
     items.forEach(function (el) {
       el.classList.add("reveal-pending");
-      /* Rete di sicurezza per-elemento: se per qualche motivo l'observer
-         non scatta mai per QUESTO elemento, solo questo elemento viene
-         forzato visibile — il resto della pagina continua a rivelarsi
-         normalmente via scroll (nessun timeout globale che spegne l'effetto). */
-      el.__revealTimer = window.setTimeout(function () {
-        reveal(el);
-      }, REVEAL_WATCHDOG_MS);
       observer.observe(el);
     });
+
+    window.addEventListener("scroll", onScrollOrResize, { passive: true });
+    window.addEventListener("resize", onScrollOrResize);
   }
 
   /* ---------- Nav attiva sulla sezione visibile ---------- */
