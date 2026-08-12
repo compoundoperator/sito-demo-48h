@@ -110,12 +110,20 @@ Questa verifica resta responsabilità dell'operatore umano.
 ## Dipendenze
 
 Bloccate in `package-lock.json`: `js-yaml` (lettura/scrittura `data.yaml`),
-`ajv` (validazione JSON Schema), `sharp` (ottimizzazione immagini —
-installata e verificata funzionante in questo ambiente), `playwright`
-(devDependency, motore di `scripts/qa-screenshots.js`). Il parsing CSV
-è manuale, senza libreria dedicata (piccolo parser in
-`scripts/import-csv.js`), per non aggiungere una dipendenza non
-necessaria.
+`ajv` (validazione JSON Schema), `playwright` (devDependency, motore di
+`scripts/qa-screenshots.js`). Il parsing CSV è manuale, senza libreria
+dedicata (piccolo parser in `scripts/import-csv.js`), per non aggiungere
+una dipendenza non necessaria.
+
+`sharp` (ottimizzazione immagini) è in `optionalDependencies`, non in
+`dependencies`: è un binario nativo, quindi `npm install`/`npm ci` non
+devono fallire soltanto perché non è installabile su una data piattaforma.
+`scripts/optimize-images.js` non lo importa mai staticamente a livello di
+modulo — lo richiede solo dentro `loadSharp()`, con `require("sharp")`
+avvolto in `try/catch`, così l'assenza del pacchetto non termina il
+processo Node prima che il codice possa gestirla (verificato installando
+realmente con `npm ci --omit=optional`: 97 test passano comunque, con
+1 solo test — quello che richiede `sharp` per davvero — saltato).
 
 `npm ci` installa anche Playwright; se il download del browser Chromium
 fallisce (rete assente), eseguire `npx playwright install chromium`.

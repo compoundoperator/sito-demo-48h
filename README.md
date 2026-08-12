@@ -66,7 +66,7 @@ Dipendenze (bloccate in `package-lock.json`):
 |---|---|---|
 | `js-yaml` | leggere/scrivere `data.yaml` | runtime (build/validate/import) |
 | `ajv` | validazione JSON Schema | runtime (validate) |
-| `sharp` | ridimensionamento/conversione WebP, rimozione EXIF | runtime opzionale — se non installabile, `optimize-images` degrada in modo controllato (mai un originale non ottimizzato copiato in output; in `PRODUCTION` il comando fallisce esplicitamente invece di procedere) |
+| `sharp` | ridimensionamento/conversione WebP, rimozione EXIF | `optionalDependency` — `npm install`/`npm ci` **non falliscono** se il binario nativo non è installabile per la piattaforma; se assente, `optimize-images` degrada in modo controllato (mai un originale non ottimizzato copiato in output; in `PRODUCTION` il comando fallisce esplicitamente invece di procedere) |
 | `playwright` | motore di QA (`scripts/qa-screenshots.js`): scroll reale, screenshot, controlli console/overflow/geometria | devDependency |
 
 `npm ci`/`npm install` installano anche Playwright. Se il postinstall non
