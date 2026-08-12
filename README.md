@@ -67,10 +67,18 @@ Dipendenze (bloccate in `package-lock.json`):
 | `js-yaml` | leggere/scrivere `data.yaml` | runtime (build/validate/import) |
 | `ajv` | validazione JSON Schema | runtime (validate) |
 | `sharp` | ridimensionamento/conversione WebP, rimozione EXIF | runtime opzionale — se non installabile, `optimize-images` degrada in modo controllato (mai un originale non ottimizzato copiato in output; in `PRODUCTION` il comando fallisce esplicitamente invece di procedere) |
+| `playwright` | motore di QA (`scripts/qa-screenshots.js`): scroll reale, screenshot, controlli console/overflow/geometria | devDependency |
 
-Playwright (per `npm run qa`) è già disponibile nell'ambiente di sviluppo
-usato per questo progetto; se assente altrove, installarlo separatamente
-(`npm install -D playwright` + browser Chromium).
+`npm ci`/`npm install` installano anche Playwright. Se il postinstall non
+riesce a scaricare il browser Chromium (rete assente/limitata), eseguire
+manualmente:
+```bash
+npx playwright install chromium
+```
+In questo ambiente di sviluppo Chromium risulta già disponibile tramite
+`PLAYWRIGHT_BROWSERS_PATH` preconfigurato: `npm ci && npm run qa` funziona
+senza passi aggiuntivi (verificato). In un ambiente diverso, privo di
+questa variabile, potrebbe essere necessario il comando sopra.
 
 ## Procedura: dalla riga Excel/CSV alla landing pronta
 

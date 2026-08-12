@@ -111,10 +111,14 @@ Questa verifica resta responsabilità dell'operatore umano.
 
 Bloccate in `package-lock.json`: `js-yaml` (lettura/scrittura `data.yaml`),
 `ajv` (validazione JSON Schema), `sharp` (ottimizzazione immagini —
-installata e verificata funzionante in questo ambiente). Il parsing CSV
+installata e verificata funzionante in questo ambiente), `playwright`
+(devDependency, motore di `scripts/qa-screenshots.js`). Il parsing CSV
 è manuale, senza libreria dedicata (piccolo parser in
 `scripts/import-csv.js`), per non aggiungere una dipendenza non
 necessaria.
+
+`npm ci` installa anche Playwright; se il download del browser Chromium
+fallisce (rete assente), eseguire `npx playwright install chromium`.
 
 **Se `sharp` non è disponibile in un altro ambiente**:
 `scripts/optimize-images.js` rileva l'errore di import e non ottimizza

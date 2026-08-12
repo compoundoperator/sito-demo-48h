@@ -272,6 +272,15 @@
 }
 
 @media (min-width: 768px) {
+  /*
+    NOTA: `order` da solo scambia SOLO l'ordine di piazzamento, non la
+    dimensione delle colonne — che restano legate alla posizione (col1 =
+    120px, col2 = 1fr). Per gli elementi pari, senza invertire anche
+    grid-template-columns, il corpo testo (order:0) finirebbe piazzato
+    nella colonna stretta da 120px e il numero (order:1) in quella larga
+    1fr, comprimendo titolo/descrizione in una colonna anomala. Le due
+    dichiarazioni vanno quindi invertite insieme.
+  */
   .why-item {
     grid-template-columns: 120px 1fr;
   }
@@ -282,6 +291,10 @@
 
   .why-item__body {
     order: 1;
+  }
+
+  .why-item:nth-child(even) {
+    grid-template-columns: 1fr 120px;
   }
 
   .why-item:nth-child(even) .why-item__index {

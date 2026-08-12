@@ -118,6 +118,102 @@ function grepInternalDataLeak(html, businessDir) {
   return values.filter(function (v) { return html.indexOf(v) !== -1; });
 }
 
+/**
+ * Controlli geometrici reali (non solo "l'elemento esiste" / "opacity:1").
+ * Confronta elementi equivalenti tra loro (mai una soglia in pixel legata
+ * al testo demo): individua compressioni di layout come quella osservata
+ * nella sezione "Perché sceglierci" (elementi pari schiacciati in una
+ * colonna stretta) e wrapper vuoti residui per sezioni omesse.
+ */
+async function checkGeometry(page) {
+  return page.evaluate(function () {
+    var result = { whyItems: null, orphanMainChildren: [] };
+
+    var bodies = Array.prototype.map.call(document.querySelectorAll(".why-item__body"), function (el) {
+      return el.getBoundingClientRect().width;
+    });
+    if (bodies.length) {
+      var maxW = Math.max.apply(null, bodies);
+      var minW = Math.min.apply(null, bodies);
+      result.whyItems = { widths: bodies, minWidth: minW, maxWidth: maxW, ratio: maxW > 0 ? minW / maxW : 1 };
+    }
+
+    var main = document.getElementById("main");
+    if (main) {
+      Array.prototype.forEach.call(main.children, function (el) {
+        var isSection = el.tagName === "SECTION";
+        var isDivider = el.className && el.className.indexOf("section-divider") !== -1;
+        if (!isSection && !isDivider) {
+          result.orphanMainChildren.push({ tag: el.tagName, cls: el.className, height: el.getBoundingClientRect().height });
+        }
+      });
+    }
+
+    return result;
+  });
+}
+
+/**
+ * Verifica che ogni link di navigazione desktop porti a una sezione la cui
+ * intestazione non risulti coperta dalla barra sticky (scroll-margin-top
+ * corretto). Eseguita solo dove la nav desktop è visibile (>= 960px).
+ */
+async function waitForScrollToSettle(page, maxWaitMs) {
+  var start = Date.now();
+  var lastY = await page.evaluate(function () { return window.scrollY; });
+  while (Date.now() - start < maxWaitMs) {
+    await page.waitForTimeout(100);
+    var y = await page.evaluate(function () { return window.scrollY; });
+    if (Math.abs(y - lastY) < 1) return; // scroll fermo: animazione conclusa
+    lastY = y;
+  }
+}
+
+async function checkNavLinkCoverage(page, sectionIds) {
+  var results = {};
+  // Parte da cima pagina: i click precedenti (realScrollThrough) possono
+  // aver lasciato la pagina scrollata molto in basso, rendendo il primo
+  // scroll-to-anchor molto lungo e a rischio di essere misurato prima che
+  // l'animazione "smooth" sia realmente conclusa.
+  await page.evaluate(function () { window.scrollTo(0, 0); });
+  await waitForScrollToSettle(page, 1000);
+
+  for (var i = 0; i < sectionIds.length; i++) {
+    var id = sectionIds[i];
+    var link = page.locator('.nav__link[href="#' + id + '"]');
+    if ((await link.count()) === 0) continue;
+    await link.click();
+    await waitForScrollToSettle(page, 2000);
+    await page.waitForTimeout(100); // margine dopo l'assestamento
+    var covered = await page.evaluate(function (sectionId) {
+      var header = document.getElementById("siteHeader");
+      var section = document.getElementById(sectionId);
+      if (!header || !section) return null;
+      var headerBottom = header.getBoundingClientRect().bottom;
+      var sectionTop = section.getBoundingClientRect().top;
+      return sectionTop < headerBottom - 1; // piccola tolleranza
+    }, id);
+    results[id] = covered;
+  }
+  await page.evaluate(function () { window.scrollTo(0, 0); });
+  await page.waitForTimeout(200);
+  return results;
+}
+
+/**
+ * Neutralizza SOLO per lo scatto corrente la posizione sticky dell'header,
+ * per evitare l'artefatto di compositing di Playwright/Chromium sugli
+ * screenshot full-page/per-elemento più alti del viewport (l'header
+ * "duplicato" a metà pagina). Non tocca alcun file del sito: è uno style
+ * iniettato nella sola pagina Playwright, dopo che tutte le verifiche
+ * funzionali reali (scroll, copertura link, ecc.) sono già state eseguite
+ * contro il comportamento sticky vero.
+ */
+async function neutralizeStickyForScreenshot(page) {
+  await page.addStyleTag({ content: "#siteHeader { position: absolute !important; }" });
+  await page.waitForTimeout(50);
+}
+
 async function run(distDir, outDir) {
   var { chromium } = require("playwright");
   var indexPath = path.join(distDir, "index.html");
@@ -183,8 +279,19 @@ async function run(distDir, outDir) {
         return broken;
       });
 
+      var geometry = await checkGeometry(page);
+
+      var navCoverage = null;
+      if (bp.width >= 960) {
+        navCoverage = await checkNavLinkCoverage(page, sectionIds);
+      }
+
+      // Da qui in poi: solo screenshot per revisione umana. Le verifiche
+      // funzionali sopra hanno già osservato il comportamento reale
+      // (sticky incluso); la neutralizzazione riguarda solo l'immagine.
       await page.evaluate(function () { window.scrollTo(0, 0); });
       await page.waitForTimeout(150);
+      await neutralizeStickyForScreenshot(page);
       await page.screenshot({ path: path.join(outDir, "full-" + bp.name + ".png"), fullPage: true });
 
       for (var s = 0; s < sectionIds.length; s++) {
@@ -197,7 +304,11 @@ async function run(distDir, outDir) {
         }
       }
 
-      report.breakpoints[bp.name] = { consoleErrors: errors, horizontalOverflow: overflow, stillHiddenAfterScroll: stillHidden, h1count: h1count, imgsWithoutAlt: imgsNoAlt, brokenImages: brokenImages, sectionsFound: sectionIds };
+      report.breakpoints[bp.name] = {
+        consoleErrors: errors, horizontalOverflow: overflow, stillHiddenAfterScroll: stillHidden,
+        h1count: h1count, imgsWithoutAlt: imgsNoAlt, brokenImages: brokenImages, sectionsFound: sectionIds,
+        geometry: geometry, navLinkCoverage: navCoverage
+      };
       await context.close();
     }
 
@@ -272,6 +383,20 @@ function summarize(report) {
     if (r.h1count !== 1) problems.push(bp + ": h1count=" + r.h1count + " (atteso 1)");
     if (r.imgsWithoutAlt > 0) problems.push(bp + ": " + r.imgsWithoutAlt + " immagini senza alt");
     if (r.brokenImages.length) problems.push(bp + ": immagini rotte -> " + r.brokenImages.join(", "));
+    if (r.geometry && r.geometry.whyItems && r.geometry.whyItems.ratio < 0.8) {
+      problems.push(
+        bp + ": elementi 'perché sceglierci' con larghezze incoerenti (rapporto " +
+        r.geometry.whyItems.ratio.toFixed(2) + ", larghezze " + r.geometry.whyItems.widths.join(",") + ")"
+      );
+    }
+    if (r.geometry && r.geometry.orphanMainChildren.length) {
+      problems.push(bp + ": elementi residui in <main> non riconducibili a sezioni/divider -> " + JSON.stringify(r.geometry.orphanMainChildren));
+    }
+    if (r.navLinkCoverage) {
+      Object.keys(r.navLinkCoverage).forEach(function (id) {
+        if (r.navLinkCoverage[id] === true) problems.push(bp + ": il link di navigazione verso #" + id + " porta a un'intestazione coperta dalla barra sticky");
+      });
+    }
   });
   Object.keys(report.noJs).forEach(function (bp) {
     var r = report.noJs[bp];
