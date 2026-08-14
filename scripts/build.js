@@ -179,28 +179,107 @@ function listBusinessDirs() {
     .map(function (e) { return path.join(base, e.name); });
 }
 
-module.exports = { buildBusiness, resolveTemplate };
+/**
+ * Rileva slug business.slug duplicati tra più cartelle business. Una
+ * cartella con data.yaml illeggibile/non valido viene ignorata qui (quel
+ * fallimento è già segnalato separatamente dal build della singola
+ * attività, vedi buildBusinesses): così un problema isolato non impedisce
+ * di rilevare comunque duplicati altrove nel batch.
+ */
+function findDuplicateSlugs(businessDirs) {
+  var slugToDirs = {};
+  businessDirs.forEach(function (dir) {
+    var data;
+    try {
+      data = validateMod.loadBusinessData(dir);
+    } catch (err) {
+      return;
+    }
+    var slug = data && data.business && data.business.slug;
+    if (typeof slug !== "string" || !slug) return;
+    if (!slugToDirs[slug]) slugToDirs[slug] = [];
+    slugToDirs[slug].push(dir);
+  });
+  return Object.keys(slugToDirs)
+    .filter(function (slug) { return slugToDirs[slug].length > 1; })
+    .map(function (slug) { return { slug: slug, dirs: slugToDirs[slug] }; });
+}
+
+/**
+ * Costruisce più attività in un'unica chiamata. Prima di costruire
+ * qualsiasi cosa, verifica che nessuno slug sia duplicato tra le cartelle:
+ * in caso di duplicati interrompe l'intero batch (nessun dist/<slug> viene
+ * creato o sovrascritto) — non esiste un esito parziale sicuro, perché
+ * costruire l'una o l'altra cartella duplicata scarterebbe silenziosamente
+ * l'output dell'altra. Le attività non duplicate restano invece isolate tra
+ * loro: un singolo build fallito (template_id non registrato, slug non
+ * valido, ecc.) non blocca le altre.
+ */
+function buildBusinesses(businessDirs) {
+  var duplicates = findDuplicateSlugs(businessDirs);
+  if (duplicates.length) {
+    var dupErr = new Error("Slug duplicati rilevati: build interrotto, nessun output generato.");
+    dupErr.duplicateSlugs = duplicates;
+    throw dupErr;
+  }
+
+  var results = [];
+  var failures = [];
+  businessDirs.forEach(function (dir) {
+    try {
+      results.push(buildBusiness(dir));
+    } catch (err) {
+      failures.push({ dir: dir, error: err });
+    }
+  });
+  return { results: results, failures: failures };
+}
+
+module.exports = { buildBusiness, resolveTemplate, findDuplicateSlugs, buildBusinesses };
 
 if (require.main === module) {
   var target = process.argv[2];
-  var dirs = target ? [path.resolve(process.cwd(), target)] : listBusinessDirs();
 
+  if (target) {
+    var singleDir = path.resolve(process.cwd(), target);
+    try {
+      var singleRes = buildBusiness(singleDir);
+      console.log("OK  " + singleRes.slug + " -> dist/" + singleRes.slug + " (foto: " + singleRes.photosUsed + ", recensioni: " + singleRes.reviewsUsed + ")");
+      singleRes.warnings.forEach(function (w) { console.log("     avviso: " + w); });
+      process.exit(0);
+    } catch (err) {
+      console.error("ERRORE building " + singleDir + ": " + err.message);
+      process.exit(1);
+    }
+  }
+
+  var dirs = listBusinessDirs();
   if (!dirs.length) {
     console.error("Nessuna attività trovata in businesses/.");
     process.exit(2);
   }
 
-  var hadError = false;
-  dirs.forEach(function (dir) {
-    try {
-      var res = buildBusiness(dir);
-      console.log("OK  " + res.slug + " -> dist/" + res.slug + " (foto: " + res.photosUsed + ", recensioni: " + res.reviewsUsed + ")");
-      res.warnings.forEach(function (w) { console.log("     avviso: " + w); });
-    } catch (err) {
-      hadError = true;
-      console.error("ERRORE building " + dir + ": " + err.message);
+  var batch;
+  try {
+    batch = buildBusinesses(dirs);
+  } catch (err) {
+    if (err.duplicateSlugs) {
+      console.error("Slug duplicati rilevati (build interrotto, nessun output generato):");
+      err.duplicateSlugs.forEach(function (d) {
+        console.error("  - slug \"" + d.slug + "\" usato da: " + d.dirs.join(", "));
+      });
+      process.exit(1);
     }
+    throw err;
+  }
+
+  batch.results.forEach(function (res) {
+    console.log("OK  " + res.slug + " -> dist/" + res.slug + " (foto: " + res.photosUsed + ", recensioni: " + res.reviewsUsed + ")");
+    res.warnings.forEach(function (w) { console.log("     avviso: " + w); });
+  });
+  batch.failures.forEach(function (f) {
+    console.error("ERRORE building " + f.dir + ": " + f.error.message);
   });
 
-  process.exit(hadError ? 1 : 0);
+  process.exit(batch.failures.length ? 1 : 0);
 }
