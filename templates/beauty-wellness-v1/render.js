@@ -415,7 +415,7 @@ function renderFooter(data, sections) {
   var socialBlock = socialItems.length ? '<div class="footer-col"><h4>Social</h4><ul>' + socialItems.join("") + "</ul></div>" : "";
 
   var disclaimer = "";
-  if (data.disclaimers && data.disclaimers.demo_banner) {
+  if (data.mode !== "PRODUCTION" && data.disclaimers && data.disclaimers.demo_banner) {
     disclaimer = '<p class="footer-disclaimer">' + escapeHtml(data.disclaimers.demo_banner) + "</p>";
   }
 
@@ -467,12 +467,6 @@ function renderHead(ctx) {
 
   var cssLinks = ctx.cssHrefs.map(function (href) { return '<link rel="stylesheet" href="' + escapeAttr(href) + '">'; }).join("\n  ");
 
-  var todoComment = ctx.allowIndexing
-    ? ""
-    : "\n  <!--\n    TODO produzione: valorizzare WHATSAPP e contact_form.endpoint con dati reali,\n" +
-      "    portare mode a PRODUCTION con publication_status approvati, quindi il meta robots\n" +
-      "    e i tag canonical/JSON-LD verranno generati automaticamente da questo stesso build.\n  -->";
-
   return (
     "<!doctype html>\n<html lang=\"it\">\n<head>\n" +
     '  <meta charset="utf-8">\n' +
@@ -483,7 +477,7 @@ function renderHead(ctx) {
     '  <meta name="theme-color" content="#C1653A">\n' +
     '  <link rel="icon" type="image/svg+xml" href="' + escapeAttr(ctx.faviconHref) + '">\n' +
     "  " + canonical + "\n" +
-    "  " + jsonLd + todoComment + "\n" +
+    "  " + jsonLd + "\n" +
     "  " + cssLinks + "\n" +
     "</head>\n<body>\n"
   );

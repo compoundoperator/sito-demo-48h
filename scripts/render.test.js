@@ -162,3 +162,35 @@ test("lead_id/priority/source_file/source_row/internal_notes non compaiono mai n
   assert.equal(html.indexOf("leads-riservato.xlsx"), -1);
   assert.equal(html.indexOf("Nota interna riservata XYZ123"), -1);
 });
+
+// ---------- rimozione commento TODO di sviluppo dall'HTML pubblicato ----------
+
+test("il commento TODO di sviluppo non compare mai nell'HTML generato, né in modalità demo né in PRODUCTION indicizzabile", function () {
+  var ctxDemo = baseCtx(); // allowIndexing: false di default
+  var htmlDemo = render.renderPage(ctxDemo);
+  assert.equal(htmlDemo.indexOf("TODO produzione"), -1);
+
+  var ctxProd = baseCtx({ allowIndexing: true, canonicalUrl: "https://esempio-attivita.it/" });
+  ctxProd.data.mode = "PRODUCTION";
+  ctxProd.data.business.address = { line: "Via Esempio 1, Roma" };
+  var htmlProd = render.renderPage(ctxProd);
+  assert.equal(htmlProd.indexOf("TODO produzione"), -1);
+});
+
+// ---------- disclaimer del footer: gating per modalità ----------
+
+test("il disclaimer del footer non compare mai in un build PRODUCTION, anche se demo_banner è valorizzato", function () {
+  var ctx = baseCtx({ allowIndexing: true, canonicalUrl: "https://esempio-attivita.it/" });
+  ctx.data.mode = "PRODUCTION";
+  ctx.data.business.address = { line: "Via Esempio 1, Roma" };
+  ctx.data.disclaimers = { demo_banner: "Concept commerciale non ufficiale, preparato per il titolare." };
+  var html = render.renderPage(ctx);
+  assert.equal(html.indexOf('class="footer-disclaimer"'), -1);
+});
+
+test("il disclaimer del footer resta presente in TEMPLATE_DEMO quando demo_banner è valorizzato", function () {
+  var ctx = baseCtx();
+  ctx.data.disclaimers = { demo_banner: "Concept commerciale non ufficiale, preparato per il titolare." };
+  var html = render.renderPage(ctx);
+  assert.ok(html.indexOf('class="footer-disclaimer"') !== -1);
+});
