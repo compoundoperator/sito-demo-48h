@@ -80,6 +80,64 @@ test(
   }
 );
 
+test(
+  "optimizeBusiness lancia un errore bloccante in PRODUCTION se sharp non è disponibile",
+  { skip: sharpLib ? "richiede un ambiente senza sharp (npm ci --omit=optional)" : false },
+  async function () {
+    var tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "landing-factory-imgtest-nosharp-"));
+    var businessDir = path.join(tmpRoot, "foto-test-no-sharp");
+    fs.mkdirSync(businessDir, { recursive: true });
+
+    // Nessun file immagine reale necessario: il ramo "sharp assente" di
+    // optimizeBusiness() lancia l'errore prima di toccare il file sorgente,
+    // ma serve comunque almeno una foto idonea (contains_recognizable_people:
+    // false, nessun minore, publication_status approvato) perché il codice
+    // raggiunga quel ramo invece di tornare subito con un report vuoto.
+    var dataYaml =
+      "category: beauty-wellness\n" +
+      "template_id: beauty-wellness-v1\n" +
+      "preset_id: default\n" +
+      "lead_id: TEST-IMG-NOSHARP-001\n" +
+      "priority: medium\n" +
+      "source_file: null\n" +
+      "source_row: null\n" +
+      "mode: PRODUCTION\n" +
+      "business:\n" +
+      "  name: Attività Test No-Sharp (esempio fittizio)\n" +
+      "  slug: foto-test-no-sharp\n" +
+      "  content_origin: client_provided\n" +
+      "  publication_status: approved_for_publication\n" +
+      "  private_demo_status: not_applicable\n" +
+      "services: []\n" +
+      "strengths: []\n" +
+      "atmosfera: []\n" +
+      "reviews: []\n" +
+      "faq: []\n" +
+      "photos:\n" +
+      "  - id: hero\n" +
+      "    local_file: photos/hero.jpg\n" +
+      "    alt_text: Foto di prova\n" +
+      "    usage: hero\n" +
+      "    contains_recognizable_people: false\n" +
+      "    contains_recognizable_minors: false\n" +
+      "    consent_confirmed: false\n" +
+      "    content_origin: client_provided\n" +
+      "    publication_status: approved_for_publication\n";
+    fs.writeFileSync(path.join(businessDir, "data.yaml"), dataYaml, "utf8");
+
+    try {
+      await assert.rejects(
+        optimizeMod.optimizeBusiness(businessDir),
+        function (err) {
+          return /sharp non è disponibile/.test(err.message) && /PRODUCTION/.test(err.message);
+        }
+      );
+    } finally {
+      fs.rmSync(tmpRoot, { recursive: true, force: true });
+    }
+  }
+);
+
 test("optimizeBusiness non produce output se non ci sono foto idonee (array vuoto)", async function () {
   var tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "landing-factory-imgtest-"));
   var businessDir = path.join(tmpRoot, "senza-foto");

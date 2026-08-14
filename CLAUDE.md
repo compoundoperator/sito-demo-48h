@@ -24,7 +24,7 @@ Questo file è una guida, **non sostituisce i controlli tecnici** in
 ## Comandi principali
 
 ```bash
-npm test                                          # tutti i test automatici (node:test) — 97 test
+npm test                                          # tutti i test automatici (node:test) — 117 test
 npm run validate -- businesses/<slug>             # valida un'attività
 npm run build [-- businesses/<slug>]              # genera dist/<slug>/ (senza argomento: tutte)
 npm run optimize-images -- businesses/<slug>      # ottimizza le foto idonee (resize+webp+strip EXIF)
@@ -34,6 +34,69 @@ npm run import:scaffold -- --file <csv> --mapping <m.yaml> --row N  # crea scaff
 ```
 
 Procedura completa passo-passo: vedi [README.md](./README.md).
+
+## CI (GitHub Actions)
+
+`.github/workflows/ci.yml` — due job, entrambi in sola lettura
+(`permissions: contents: read`, nessun passo di deploy, nessun segreto):
+
+- **`test-and-build`**: `npm ci` → Chromium per Playwright
+  (`npx --no-install playwright install --with-deps chromium`) →
+  `npm test` → `npm run validate` su ogni cartella in `businesses/*/` →
+  `npm run build` (tutte) → `npm run qa` su ogni sito generato.
+- **`test-optional-deps`**: `npm ci --omit=optional` (sharp escluso) →
+  `npm test` — unico punto in cui il percorso "sharp assente" viene
+  realmente eseguito (vedi "Dipendenze" sotto).
+
+Trigger: pull request verso `main`, push su `main`, `workflow_dispatch`
+manuale. Equivalente locale esatto:
+
+```bash
+npm ci
+npx --no-install playwright install --with-deps chromium
+npm test
+for d in businesses/*/; do npm run validate -- "$d"; done
+npm run build
+for d in dist/*/; do npm run qa -- "$d"; done
+
+# percorso sharp assente (job separato in CI):
+npm ci --omit=optional
+npm test
+```
+
+## Test automatici
+
+`npm test` esegue tutti i file `scripts/*.test.js` (117 test). Oltre ai
+test originali (validazione, sicurezza, rendering, importer, ottimizzazione
+immagini), tre file esercitano scenari end-to-end su dati interamente
+sintetici, mai scritti sotto `businesses/`:
+
+- `scripts/production-e2e.test.js` — pipeline reale validate → build in
+  modalità PRODUCTION (indicizzabilità, JSON-LD, escaping, URL pericolosi,
+  path traversal, fughe di dati interni, fallimento chiuso su dati
+  incompleti).
+- `scripts/batch-generation.test.js` — genera 13 attività sintetiche in
+  un'unica esecuzione per dimostrare isolamento reciproco dell'output,
+  rilevamento di slug duplicati (`buildBusinesses`/`findDuplicateSlugs` in
+  `scripts/build.js`) e determinismo su build ripetute.
+- Test aggiuntivi in `scripts/import-csv.test.js` per import ripetuti su
+  più righe e per slug non sicuri o duplicati tra righe diverse.
+
+**Convenzione obbligatoria per nuovi test**: `buildBusiness()`/
+`buildBusinesses()` scrivono sempre in `dist/<slug>` al repo root,
+condiviso tra tutti i file di test, e `node --test` esegue file diversi in
+parallelo per default. Ogni nuovo test che genera output tramite
+`build.js` deve usare uno slug con prefisso univoco per file (es.
+`smoke-prod-e2e-*`, `smoke-batch-*`) mai riusato in un altro file, e
+ripulire sia la cartella temporanea sia `dist/<slug>` in un blocco
+`finally`.
+
+Cosa dimostrano — e cosa NON dimostrano — questi test: la correttezza
+meccanica della pipeline contro dati sintetici (escaping, validazione,
+provenienza, indicizzabilità, isolamento tra attività). NON dimostrano la
+veridicità di contenuti reali, la validità di un consenso reale, né che le
+due attività demo incluse nel repository siano pronte per un uso
+commerciale reale.
 
 ## Branch da NON toccare mai
 
@@ -66,6 +129,15 @@ l'indicizzazione dei motori di ricerca, non nasconde la pagina a chi ha
 l'URL diretto. Per `PRIVATE_DEMO`, la riservatezza reale in questa fase si
 ottiene NON pubblicando l'URL (anteprima locale o screenshot/video), non
 tramite il meta tag.
+
+**Percorso verso una build PRODUCTION indicizzabile.** `scripts/build.js`
+(`computeAllowIndexing`) attiva automaticamente l'assenza del meta
+`noindex`, il tag `canonical` e il JSON-LD solo quando **tutte** queste
+condizioni sono vere: `mode: PRODUCTION`, `business.publication_status:
+approved_for_publication`, `business.address.line` valorizzato, e
+`business.canonical_url` un URL `https` valido. Nessun passo manuale
+ulteriore è richiesto: appena questi dati sono completi e approvati, la
+build successiva li genera da sola.
 
 ## Sicurezza ed escaping
 
@@ -122,8 +194,13 @@ devono fallire soltanto perché non è installabile su una data piattaforma.
 modulo — lo richiede solo dentro `loadSharp()`, con `require("sharp")`
 avvolto in `try/catch`, così l'assenza del pacchetto non termina il
 processo Node prima che il codice possa gestirla (verificato installando
-realmente con `npm ci --omit=optional`: 97 test passano comunque, con
-1 solo test — quello che richiede `sharp` per davvero — saltato).
+realmente con `npm ci --omit=optional`: 117 test passano comunque, con
+1 solo test saltato — sempre esattamente uno dei due test dipendenti da
+`sharp` in `scripts/optimize-images.test.js`, mai zero e mai entrambi:
+quello che richiede `sharp` per davvero è saltato quando manca, quello che
+verifica il fallimento bloccante in PRODUCTION quando manca è saltato
+quando `sharp` è presente. La CI esercita entrambi i casi in due job
+separati — vedi "CI" sopra).
 
 `npm ci` installa anche Playwright; se il download del browser Chromium
 fallisce (rete assente), eseguire `npx playwright install chromium`.
@@ -135,8 +212,22 @@ silenziosamente nell'output). In `TEMPLATE_DEMO`/`PRIVATE_DEMO` stampa
 un avviso e le foto ricadono sul placeholder grafico; in `PRODUCTION` il
 comando fallisce con errore esplicito invece di procedere.
 
+## Limiti noti non risolti in questo passaggio di hardening
+
+- Il modulo di contatto in `templates/beauty-wellness-v1/render.js`
+  (`renderContatti`) dipende da `data.contactFormEndpointValidated`, un
+  campo che nessun punto del codice valorizza mai: di fatto il modulo di
+  contatto non viene mai mostrato in una build `PRODUCTION`. Non corretto
+  in questo passaggio (limitato, deliberatamente, alla sola correzione del
+  gating del disclaimer del footer per modalità); resta da decidere se
+  implementare la validazione reale dell'endpoint o rimuovere il codice
+  morto.
+
 ## Deploy
 
 **Nessun deploy va eseguito senza autorizzazione esplicita dell'utente**,
 in qualunque modalità. Questo progetto, nel suo stato attuale, non
-implementa alcuna pipeline di deploy automatico.
+implementa alcuna pipeline di deploy automatico. La CI
+(`.github/workflows/ci.yml`) esegue solo verifiche
+(`permissions: contents: read`): nessun passo pubblica, carica o
+distribuisce alcunché al di fuori del job stesso.

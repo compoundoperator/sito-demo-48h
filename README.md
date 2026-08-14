@@ -162,8 +162,45 @@ node scripts/build.js businesses/mia-prova
 - `templates/registry.json` è l'unica fonte ammessa per risolvere
   template e preset: un valore non registrato interrompe il build con
   errore, mai un fallback silenzioso.
-- 97 test automatici (`npm test`) coprono queste regole end-to-end,
+- 117 test automatici (`npm test`) coprono queste regole end-to-end,
   incluso il rendering reale (non solo le singole utility).
+
+## CI (GitHub Actions)
+
+`.github/workflows/ci.yml` esegue, su ogni pull request verso `main`, ogni
+push su `main` e su richiesta manuale (`workflow_dispatch`), due job in
+sola lettura (`permissions: contents: read`, nessun passo di deploy,
+nessun segreto richiesto):
+
+| Job | Cosa fa |
+|---|---|
+| `test-and-build` | `npm ci` → Chromium per Playwright → `npm test` → `npm run validate` su ogni attività in `businesses/` → `npm run build` (tutte) → `npm run qa` su ogni sito generato |
+| `test-optional-deps` | `npm ci --omit=optional` (senza `sharp`) → `npm test` — unico punto in cui il percorso "sharp assente" viene realmente eseguito |
+
+Equivalente locale esatto:
+
+```bash
+npm ci
+npx --no-install playwright install --with-deps chromium
+npm test
+for d in businesses/*/; do npm run validate -- "$d"; done
+npm run build
+for d in dist/*/; do npm run qa -- "$d"; done
+
+# percorso sharp assente (job separato in CI):
+npm ci --omit=optional
+npm test
+```
+
+**"Ready for review" non è "merged", non è "deployed", non è "pronto per
+un vero cliente pagante"** — sono quattro stati distinti:
+- *Ready for review*: la CI è verde, il codice è pronto per una revisione umana.
+- *Merged*: il codice è integrato in `main`, non ancora pubblicato da nessuna parte.
+- *Deployed*: non implementato in questo progetto — nessuna pipeline pubblica
+  automaticamente nulla, in nessuna modalità (vedi [CLAUDE.md](./CLAUDE.md#deploy)).
+- *Pronto per un vero cliente pagante*: richiede, oltre a quanto sopra,
+  revisione umana della veridicità di ogni dato reale, validità di ogni
+  consenso reale, e le decisioni ancora aperte elencate in "Limiti noti".
 
 ## Limiti noti
 
@@ -178,6 +215,16 @@ node scripts/build.js businesses/mia-prova
   implementati.
 - Nessuna pipeline di deploy automatico è implementata: la pubblicazione
   resta un passo manuale, esplicitamente autorizzato.
+- I test end-to-end aggiunti (`scripts/production-e2e.test.js`,
+  `scripts/batch-generation.test.js`) dimostrano la correttezza meccanica
+  della pipeline validate/build contro dati interamente sintetici (mai
+  scritti in `businesses/`): escaping, validazione, provenienza,
+  indicizzabilità, isolamento tra attività. NON dimostrano la veridicità di
+  contenuti reali, la validità giuridica di un consenso reale, né che le
+  due attività demo incluse siano pronte per un uso commerciale reale.
+- Nessun dato reale di cliente o lead viene mai letto o inventato nei test
+  automatici: l'importatore, nei test, legge solo CSV sintetici scritti dal
+  test stesso o `fixtures/leads-example.csv` (dati dichiaratamente fittizi).
 
 ## Font: fonte e licenza
 

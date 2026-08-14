@@ -102,3 +102,117 @@ test("listRows filtra per priorità senza inventare righe", function () {
   assert.equal(high.length, 2);
   fs.rmSync(tmpRoot, { recursive: true, force: true });
 });
+
+// ---------- scalabilità: parsing, slug sicuri, import ripetuti ----------
+
+test("parseCsv gestisce un campo tra virgolette con newline incorporato", function () {
+  var rows = importCsv.parseCsv('a,"riga1\nriga2",c\n1,2,3\n');
+  assert.deepEqual(rows[0], ["a", "riga1\nriga2", "c"]);
+  assert.deepEqual(rows[1], ["1", "2", "3"]);
+});
+
+test("importRow rifiuta uno --slug esplicito con tentativo di path traversal, senza creare nulla", function () {
+  var tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "landing-factory-test-"));
+  var csvPath = path.join(tmpRoot, "leads.csv");
+  var mappingPath = path.join(tmpRoot, "mapping.yaml");
+  fs.writeFileSync(csvPath, "Nome Attività,Priorità\nProva Traversal (test automatico),alta\n");
+  fs.writeFileSync(
+    mappingPath,
+    "constants:\n  category: beauty-wellness\n  template_id: beauty-wellness-v1\n  preset_id: default\n  mode: PRIVATE_DEMO\ncolumns:\n  \"Nome Attività\": business.name\n  \"Priorità\": priority\n"
+  );
+  var businessesDir = path.join(path.resolve(__dirname, ".."), "businesses");
+  var before = fs.readdirSync(businessesDir).sort();
+  try {
+    assert.throws(function () {
+      importCsv.importRow({ file: csvPath, mapping: mappingPath, row: 1, slug: "../../etc/passwd" });
+    }, /Impossibile derivare uno slug valido/);
+    var after = fs.readdirSync(businessesDir).sort();
+    assert.deepEqual(after, before);
+  } finally {
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+  }
+});
+
+test("un nome attività che si riduce a slug vuoto richiede --slug esplicito", function () {
+  var tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "landing-factory-test-"));
+  var csvPath = path.join(tmpRoot, "leads.csv");
+  var mappingPath = path.join(tmpRoot, "mapping.yaml");
+  fs.writeFileSync(csvPath, "Nome Attività,Priorità\n!!!,alta\n");
+  fs.writeFileSync(
+    mappingPath,
+    "constants:\n  category: beauty-wellness\n  template_id: beauty-wellness-v1\n  preset_id: default\n  mode: PRIVATE_DEMO\ncolumns:\n  \"Nome Attività\": business.name\n  \"Priorità\": priority\n"
+  );
+  try {
+    assert.throws(function () {
+      importCsv.importRow({ file: csvPath, mapping: mappingPath, row: 1 });
+    }, /Impossibile derivare uno slug valido/);
+  } finally {
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+  }
+});
+
+test("importRow ripetuto su più righe distinte produce scaffold isolati, senza contaminazione reciproca", function () {
+  var tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "landing-factory-test-"));
+  var csvPath = path.join(tmpRoot, "leads.csv");
+  var mappingPath = path.join(tmpRoot, "mapping.yaml");
+  fs.writeFileSync(
+    csvPath,
+    "Nome Attività,Priorità\n" +
+      "Prova Import Batch Uno (test automatico),alta\n" +
+      "Prova Import Batch Due (test automatico),bassa\n" +
+      "Prova Import Batch Tre (test automatico),media\n"
+  );
+  fs.writeFileSync(
+    mappingPath,
+    "constants:\n  category: beauty-wellness\n  template_id: beauty-wellness-v1\n  preset_id: default\n  mode: PRIVATE_DEMO\ncolumns:\n  \"Nome Attività\": business.name\n  \"Priorità\": priority\n"
+  );
+
+  var results = [];
+  try {
+    for (var row = 1; row <= 3; row++) {
+      results.push(importCsv.importRow({ file: csvPath, mapping: mappingPath, row: row }));
+    }
+    assert.equal(results.length, 3);
+    var slugs = results.map(function (r) { return r.slug; });
+    assert.equal(new Set(slugs).size, 3);
+
+    results.forEach(function (res, i) {
+      var yamlText = fs.readFileSync(path.join(res.businessDir, "data.yaml"), "utf8");
+      assert.ok(yamlText.indexOf(res.data.business.name) !== -1);
+      results.forEach(function (other, j) {
+        if (i === j) return;
+        assert.equal(yamlText.indexOf(other.data.business.name), -1);
+      });
+    });
+  } finally {
+    results.forEach(function (r) { fs.rmSync(r.businessDir, { recursive: true, force: true }); });
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+  }
+});
+
+test("due righe distinte che normalizzano allo stesso slug: la seconda importazione fallisce senza --force", function () {
+  var tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "landing-factory-test-"));
+  var csvPath = path.join(tmpRoot, "leads.csv");
+  var mappingPath = path.join(tmpRoot, "mapping.yaml");
+  fs.writeFileSync(
+    csvPath,
+    "Nome Attività,Priorità\n" +
+      "Prova Collisione Slug (test automatico),alta\n" +
+      "Prova Collisione Slug (test automatico)!!!,bassa\n"
+  );
+  fs.writeFileSync(
+    mappingPath,
+    "constants:\n  category: beauty-wellness\n  template_id: beauty-wellness-v1\n  preset_id: default\n  mode: PRIVATE_DEMO\ncolumns:\n  \"Nome Attività\": business.name\n  \"Priorità\": priority\n"
+  );
+
+  var first;
+  try {
+    first = importCsv.importRow({ file: csvPath, mapping: mappingPath, row: 1 });
+    assert.throws(function () {
+      importCsv.importRow({ file: csvPath, mapping: mappingPath, row: 2 });
+    }, /esiste già/);
+  } finally {
+    if (first && first.businessDir) fs.rmSync(first.businessDir, { recursive: true, force: true });
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+  }
+});

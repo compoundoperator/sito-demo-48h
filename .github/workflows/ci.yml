@@ -1,0 +1,97 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-and-build:
+    name: Test, validate, build, QA
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Caches only the Chromium binary download. OS-level shared libraries
+      # (installed below via --with-deps) are never cached: every
+      # GitHub-hosted run starts from a fresh VM.
+      - name: Cache Playwright browser binaries
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      # --no-install forces npx to use the playwright binary npm ci already
+      # installed as a pinned devDependency, and to fail loudly if it's
+      # somehow not resolvable there, instead of silently fetching an
+      # undeclared copy of the package from the registry.
+      - name: Install Playwright Chromium + OS dependencies
+        run: npx --no-install playwright install --with-deps chromium
+
+      - name: Run automated tests
+        run: npm test
+
+      - name: Validate committed demo businesses
+        run: |
+          for d in businesses/*/; do
+            echo "Validating $d"
+            npm run validate -- "$d"
+          done
+
+      - name: Optimize images
+        run: |
+          for d in businesses/*/; do
+            npm run optimize-images -- "$d"
+          done
+
+      - name: Build all businesses
+        run: npm run build
+
+      - name: QA every generated site
+        run: |
+          for d in dist/*/; do
+            echo "QA for $d"
+            npm run qa -- "$d"
+          done
+
+  test-optional-deps:
+    name: Test (sharp absent, npm ci --omit=optional)
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - name: Install dependencies without optional deps (sharp excluded)
+        run: npm ci --omit=optional
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+
+      - name: Run automated tests (sharp genuinely absent)
+        run: npm test
