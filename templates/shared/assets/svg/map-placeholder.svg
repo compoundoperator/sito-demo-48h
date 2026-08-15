@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" role="img" aria-labelledby="mapTitle">
+  <title id="mapTitle">Mappa stilizzata dimostrativa della zona del centro estetico</title>
+  <rect width="400" height="300" fill="#F3E9DD"/>
+  <g stroke="#E4D6C3" stroke-width="2">
+    <path d="M0 60 H400"/>
+    <path d="M0 140 H400"/>
+    <path d="M0 220 H400"/>
+    <path d="M80 0 V300"/>
+    <path d="M180 0 V300"/>
+    <path d="M300 0 V300"/>
+  </g>
+  <g fill="#EADBC8">
+    <rect x="20" y="20" width="40" height="24" rx="4"/>
+    <rect x="100" y="80" width="60" height="36" rx="4"/>
+    <rect x="200" y="30" width="80" height="20" rx="4"/>
+    <rect x="320" y="90" width="50" height="30" rx="4"/>
+    <rect x="40" y="180" width="50" height="26" rx="4"/>
+    <rect x="220" y="180" width="60" height="30" rx="4"/>
+    <rect x="320" y="200" width="50" height="26" rx="4"/>
+  </g>
+  <g transform="translate(200,150)">
+    <circle r="34" fill="#C1653A" opacity="0.15"/>
+    <path d="M0 -30c14 0 26 11 26 25 0 18 -26 44 -26 44s-26 -26 -26 -44c0 -14 12 -25 26 -25z" fill="#C1653A"/>
+    <circle cy="-5" r="8" fill="#FBF6F0"/>
+  </g>
+</svg>

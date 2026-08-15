@@ -1,0 +1,28 @@
+{
+  "name": "landing-factory",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Generatore data-driven di landing page statiche (beauty/wellness e famiglie future). Motore lato autore (Node); ogni sito generato resta HTML/CSS/JS statico.",
+  "type": "commonjs",
+  "scripts": {
+    "test": "node --test scripts/*.test.js",
+    "validate": "node scripts/validate.js",
+    "build": "node scripts/build.js",
+    "optimize-images": "node scripts/optimize-images.js",
+    "qa": "node scripts/qa-screenshots.js",
+    "import:scaffold": "node scripts/import-csv.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "ajv": "^8.20.0",
+    "js-yaml": "^5.2.3"
+  },
+  "devDependencies": {
+    "playwright": "^1.56.1"
+  },
+  "optionalDependencies": {
+    "sharp": "^0.35.3"
+  }
+}

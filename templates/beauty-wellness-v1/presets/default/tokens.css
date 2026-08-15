@@ -1,0 +1,39 @@
+/*
+  Preset "default" per beauty-wellness-v1 — palette "Terracotta & Crema".
+  Unico file che definisce i valori di colore: template/theme usano
+  esclusivamente var(--color-*), mai un hex literal fuori da qui.
+*/
+
+:root {
+  --color-bg: #fbf6f0;
+  --color-bg-alt: #f3e9dd;
+  --color-surface: #ffffff;
+  --color-ink: #2b211c;
+  --color-ink-soft: #5a4b41;
+  --color-terracotta: #c1653a;
+  --color-terracotta-deep: #9a4a28;
+  --color-terracotta-darkest: #7c3c20;
+  --color-sage: #7c8c6b;
+  --color-sage-deep: #5c6a4e;
+  --color-sage-tint: rgba(124, 140, 107, 0.12);
+  --color-gold: #c9a15a;
+  --color-gold-deep: #7c6029;
+  --color-line: #e4d6c3;
+  --color-whatsapp: #25d366;
+  --color-whatsapp-deep: #1da851;
+
+  --color-on-terracotta: #fbf6f0;
+
+  --color-header-scrolled-bg: rgba(251, 246, 240, 0.86);
+  --color-bg-translucent: rgba(251, 246, 240, 0.88);
+  --color-hero-visual-mid: #ead9c5;
+
+  --color-atmosfera-tone2-a: #8a7a63;
+  --color-atmosfera-tone2-b: #5a4b41;
+  --color-atmosfera-tone3-b: #566047;
+
+  --color-footer-text: rgba(251, 246, 240, 0.82);
+  --color-footer-text-soft: rgba(251, 246, 240, 0.68);
+  --color-footer-text-dim: rgba(251, 246, 240, 0.6);
+  --color-footer-border: rgba(251, 246, 240, 0.14);
+}

@@ -1,0 +1,12 @@
+# dipendenze
+node_modules/
+
+# output generato (rigenerabile con `npm run build`)
+dist/
+
+# QA/screenshot/report generati localmente
+qa-output/
+*.qa-report.json
+
+# file di sistema
+.DS_Store
