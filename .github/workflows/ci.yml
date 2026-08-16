@@ -51,6 +51,14 @@ jobs:
       - name: Run automated tests
         run: npm test
 
+      # Verifica l'integrazione reale tra new-landing.js, l'output generato
+      # e la QA Playwright reale (non iniettata) — l'unico punto in cui il
+      # percorso pubblico --business viene esercitato end-to-end in CI. Usa
+      # solo un'attività sintetica temporanea (businesses/smoke-operations-*),
+      # mai dati reali; ripulisce ogni artefatto da sola (vedi lo script).
+      - name: Integration check - new-landing full pipeline with real QA (synthetic fixture)
+        run: node scripts/ci-integration-check.js
+
       - name: Validate committed demo businesses
         run: |
           for d in businesses/*/; do

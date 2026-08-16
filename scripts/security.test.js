@@ -3,6 +3,8 @@
 var test = require("node:test");
 var assert = require("node:assert/strict");
 var path = require("path");
+var fs = require("fs");
+var os = require("os");
 
 var esc = require("./security/escape.js");
 var url = require("./security/url.js");
@@ -200,4 +202,173 @@ test("resolveDossierAsset accetta un percorso relativo valido dentro dossier/", 
   var resolved = paths.resolveDossierAsset(businessDir, "photos/hero.jpg");
   assert.ok(resolved);
   assert.equal(resolved.indexOf(path.join(businessDir, "dossier")), 0);
+});
+
+// ---------- paths.js: resolveBusinessesDir ----------
+
+function withTempBusinessesRoot(fn) {
+  var tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "landing-factory-pathstest-"));
+  var businessesRoot = path.join(tmpRoot, "businesses");
+  fs.mkdirSync(businessesRoot, { recursive: true });
+  try {
+    fn(tmpRoot, businessesRoot);
+  } finally {
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+  }
+}
+
+test("resolveBusinessesDir accetta una cartella diretta valida dentro businesses/", function () {
+  withTempBusinessesRoot(function (tmpRoot, businessesRoot) {
+    var target = path.join(businessesRoot, "attivita-prova");
+    fs.mkdirSync(target);
+    var resolved = paths.resolveBusinessesDir(target, businessesRoot);
+    assert.equal(resolved, fs.realpathSync(target));
+  });
+});
+
+test("resolveBusinessesDir rifiuta path traversal fuori da businesses/", function () {
+  withTempBusinessesRoot(function (tmpRoot, businessesRoot) {
+    fs.mkdirSync(path.join(tmpRoot, "outside"));
+    var traversal = path.join(businessesRoot, "..", "outside");
+    assert.equal(paths.resolveBusinessesDir(traversal, businessesRoot), null);
+  });
+});
+
+test("resolveBusinessesDir rifiuta un percorso assoluto esterno", function () {
+  withTempBusinessesRoot(function (tmpRoot, businessesRoot) {
+    var external = fs.mkdtempSync(path.join(os.tmpdir(), "landing-factory-external-"));
+    try {
+      assert.equal(paths.resolveBusinessesDir(external, businessesRoot), null);
+    } finally {
+      fs.rmSync(external, { recursive: true, force: true });
+    }
+  });
+});
+
+test("resolveBusinessesDir rifiuta un symlink che punta fuori da businesses/", function () {
+  withTempBusinessesRoot(function (tmpRoot, businessesRoot) {
+    var outsideTarget = path.join(tmpRoot, "outside-real");
+    fs.mkdirSync(outsideTarget);
+    var link = path.join(businessesRoot, "link-evasivo");
+    fs.symlinkSync(outsideTarget, link, "dir");
+    assert.equal(paths.resolveBusinessesDir(link, businessesRoot), null);
+  });
+});
+
+test("resolveBusinessesDir rifiuta una cartella annidata più di un livello sotto businesses/", function () {
+  withTempBusinessesRoot(function (tmpRoot, businessesRoot) {
+    var nested = path.join(businessesRoot, "attivita-prova", "sottocartella");
+    fs.mkdirSync(nested, { recursive: true });
+    assert.equal(paths.resolveBusinessesDir(nested, businessesRoot), null);
+  });
+});
+
+test("resolveBusinessesDir rifiuta businesses/ stessa", function () {
+  withTempBusinessesRoot(function (tmpRoot, businessesRoot) {
+    assert.equal(paths.resolveBusinessesDir(businessesRoot, businessesRoot), null);
+  });
+});
+
+test("resolveBusinessesDir rifiuta un percorso inesistente o un file (non una cartella)", function () {
+  withTempBusinessesRoot(function (tmpRoot, businessesRoot) {
+    assert.equal(paths.resolveBusinessesDir(path.join(businessesRoot, "non-esiste"), businessesRoot), null);
+    var filePath = path.join(businessesRoot, "un-file.txt");
+    fs.writeFileSync(filePath, "x");
+    assert.equal(paths.resolveBusinessesDir(filePath, businessesRoot), null);
+  });
+});
+
+// ---------- paths.js: resolveBusinessSlugDir ----------
+
+test("resolveBusinessSlugDir: slug non ancora esistente -> {exists:false} con il percorso atteso", function () {
+  withTempBusinessesRoot(function (tmpRoot, businessesRoot) {
+    var result = paths.resolveBusinessSlugDir(businessesRoot, "nuova-attivita");
+    assert.ok(result);
+    assert.equal(result.exists, false);
+    assert.equal(result.path, path.join(fs.realpathSync(businessesRoot), "nuova-attivita"));
+  });
+});
+
+test("resolveBusinessSlugDir: cartella reale già esistente -> {exists:true}", function () {
+  withTempBusinessesRoot(function (tmpRoot, businessesRoot) {
+    var target = path.join(businessesRoot, "attivita-esistente");
+    fs.mkdirSync(target);
+    var result = paths.resolveBusinessSlugDir(businessesRoot, "attivita-esistente");
+    assert.ok(result);
+    assert.equal(result.exists, true);
+    assert.equal(result.path, fs.realpathSync(target));
+  });
+});
+
+test("resolveBusinessSlugDir: rifiuta un candidato che è un collegamento simbolico (anche se punterebbe dentro businessesRoot)", function () {
+  withTempBusinessesRoot(function (tmpRoot, businessesRoot) {
+    var realInside = path.join(businessesRoot, "reale-dentro");
+    fs.mkdirSync(realInside);
+    var link = path.join(businessesRoot, "link-a-dentro");
+    fs.symlinkSync(realInside, link, "dir");
+    assert.equal(paths.resolveBusinessSlugDir(businessesRoot, "link-a-dentro"), null);
+  });
+});
+
+test("resolveBusinessSlugDir: rifiuta un collegamento simbolico dangling (target inesistente)", function () {
+  withTempBusinessesRoot(function (tmpRoot, businessesRoot) {
+    var missingTarget = path.join(tmpRoot, "non-esiste-mai");
+    var link = path.join(businessesRoot, "link-dangling");
+    fs.symlinkSync(missingTarget, link, "dir");
+    // lstat ha successo su un symlink dangling (non segue il link): non va
+    // MAI confuso con "non esiste ancora, sicuro da creare qui".
+    assert.equal(paths.resolveBusinessSlugDir(businessesRoot, "link-dangling"), null);
+  });
+});
+
+test("resolveBusinessSlugDir: rifiuta businessesRoot che esiste ma è un file, non una cartella", function () {
+  var tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "landing-factory-pathstest-"));
+  try {
+    var filePath = path.join(tmpRoot, "non-una-cartella");
+    fs.writeFileSync(filePath, "x");
+    assert.equal(paths.resolveBusinessSlugDir(filePath, "qualunque-slug"), null);
+  } finally {
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+  }
+});
+
+test("resolveBusinessSlugDir: rifiuta businessesRoot inesistente", function () {
+  var tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "landing-factory-pathstest-"));
+  try {
+    var neverCreated = path.join(tmpRoot, "mai-creata");
+    assert.equal(paths.resolveBusinessSlugDir(neverCreated, "qualunque-slug"), null);
+  } finally {
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+  }
+});
+
+test("resolveBusinessSlugDir: rifiuta businessesRoot che è un collegamento simbolico auto-referenziale (ELOOP), mai trattato come inesistente/sicuro", function () {
+  var tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "landing-factory-pathstest-"));
+  try {
+    var loopPath = path.join(tmpRoot, "loop");
+    fs.symlinkSync(loopPath, loopPath, "dir");
+    assert.equal(paths.resolveBusinessSlugDir(loopPath, "qualunque-slug"), null);
+  } finally {
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+  }
+});
+
+test("resolveBusinessSlugDir: rifiuta businessesRoot il cui percorso attraversa un file come componente intermedia (ENOTDIR)", function () {
+  var tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "landing-factory-pathstest-"));
+  try {
+    var fileComponent = path.join(tmpRoot, "in-realtà-un-file");
+    fs.writeFileSync(fileComponent, "x");
+    var businessesRootThroughFile = path.join(fileComponent, "businesses");
+    assert.equal(paths.resolveBusinessSlugDir(businessesRootThroughFile, "qualunque-slug"), null);
+  } finally {
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+  }
+});
+
+test("resolveBusinessSlugDir: rifiuta uno slug non valido, senza mai toccare il filesystem", function () {
+  withTempBusinessesRoot(function (tmpRoot, businessesRoot) {
+    ["../../etc/passwd", "Beauty-Wellness", "", null, undefined, "a/b"].forEach(function (badSlug) {
+      assert.equal(paths.resolveBusinessSlugDir(businessesRoot, badSlug), null, "doveva essere rifiutato: " + badSlug);
+    });
+  });
 });
