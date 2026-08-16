@@ -187,7 +187,40 @@ function applyMapping(skeleton, mapping, row, meta) {
   return data;
 }
 
+/**
+ * opts.root controlla SOLO la normalizzazione di provenienza (source_file),
+ * mai il percorso della cartella business: default alla costante ROOT del
+ * modulo se non fornito esplicitamente. Un valore esplicito non valido
+ * (non stringa, vuoto) fa fallire subito con un errore chiaro — mai un
+ * fallback silenzioso che nasconderebbe un bug del chiamante.
+ */
+function resolveImportRoot(opts) {
+  if (opts.root === undefined) return ROOT;
+  if (typeof opts.root !== "string" || opts.root.trim() === "") {
+    throw new Error("opts.root non valido: deve essere un percorso non vuoto.");
+  }
+  return opts.root;
+}
+
+/**
+ * opts.businessesRoot controlla SOLO dove viene scritta/cercata la
+ * cartella business: default a <effectiveRoot>/businesses se non fornito
+ * esplicitamente (stessa formula già usata da new-landing.js). Indipendente
+ * da opts.root: new-landing.js passa qui la propria businessesRoot già
+ * autoritativa (la stessa usata dal preflight), mai ri-derivata da root.
+ */
+function resolveImportBusinessesRoot(opts, effectiveRoot) {
+  if (opts.businessesRoot === undefined) return path.join(effectiveRoot, "businesses");
+  if (typeof opts.businessesRoot !== "string" || opts.businessesRoot.trim() === "") {
+    throw new Error("opts.businessesRoot non valido: deve essere un percorso non vuoto.");
+  }
+  return opts.businessesRoot;
+}
+
 function importRow(opts) {
+  var root = resolveImportRoot(opts);
+  var businessesRoot = resolveImportBusinessesRoot(opts, root);
+
   var csvText = fs.readFileSync(opts.file, "utf8");
   var rows = readRowsAsObjects(csvText);
   if (opts.row < 1 || opts.row > rows.length) {
@@ -203,14 +236,24 @@ function importRow(opts) {
     throw new Error("Impossibile derivare uno slug valido: specificare --slug esplicitamente.");
   }
 
-  var businessDir = path.join(ROOT, "businesses", slug);
-  if (fs.existsSync(businessDir) && !opts.force) {
+  // Stesso helper usato dal preflight di new-landing.js (mai una coppia
+  // existsSync+lstatSync duplicata qui): ri-validato appena prima della
+  // scrittura, così un collegamento simbolico introdotto dopo il preflight
+  // viene comunque rifiutato. force/--overwrite-business/--resume-existing
+  // non possono mai bypassare un risultato null: quel controllo avviene
+  // solo DOPO.
+  var candidate = pathsUtil.resolveBusinessSlugDir(businessesRoot, slug);
+  if (!candidate) {
+    throw new Error("businesses/" + slug + " non è un percorso ammissibile (collegamento simbolico, radice non valida, o fuori da businessesRoot).");
+  }
+  if (candidate.exists && !opts.force) {
     throw new Error("businesses/" + slug + " esiste già. Usa --force per sovrascrivere esplicitamente (mai automatico).");
   }
+  var businessDir = candidate.path;
 
   var skeleton = buildSkeleton();
   var data = applyMapping(skeleton, mapping, row, {
-    sourceFile: path.relative(ROOT, path.resolve(opts.file)),
+    sourceFile: path.relative(root, path.resolve(opts.file)),
     sourceRow: opts.row,
     slug: slug
   });

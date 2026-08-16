@@ -235,6 +235,73 @@ test("una riga CSV diversa che punta allo stesso slug produce un fingerprint div
   assert.notEqual(fpRow1, fpRow2);
 });
 
+// ================= opts.root / opts.businessesRoot: validazione esplicita, mai un fallback silenzioso =================
+
+test("resolveOptRoot: undefined usa il default (ROOT reale del modulo)", function () {
+  assert.equal(nl.resolveOptRoot({}), ROOT);
+});
+
+test("resolveOptRoot: un valore esplicito valido viene usato letteralmente", function () {
+  assert.equal(nl.resolveOptRoot({ root: "/tmp/una-radice-esplicita" }), "/tmp/una-radice-esplicita");
+});
+
+test("resolveOptRoot: un valore esplicito vuoto o non stringa viene rifiutato, mai silenziosamente sostituito dal default", function () {
+  assert.throws(function () { nl.resolveOptRoot({ root: "" }); }, /opts\.root non valido/);
+  assert.throws(function () { nl.resolveOptRoot({ root: "   " }); }, /opts\.root non valido/);
+  assert.throws(function () { nl.resolveOptRoot({ root: 123 }); }, /opts\.root non valido/);
+});
+
+test("resolveOptBusinessesRoot: undefined usa il default (<root>/businesses)", function () {
+  assert.equal(nl.resolveOptBusinessesRoot({}, "/tmp/una-radice"), path.join("/tmp/una-radice", "businesses"));
+});
+
+test("resolveOptBusinessesRoot: un valore esplicito valido è indipendente da root", function () {
+  assert.equal(nl.resolveOptBusinessesRoot({ businessesRoot: "/altrove/businesses" }, "/tmp/una-radice"), "/altrove/businesses");
+});
+
+test("resolveOptBusinessesRoot: un valore esplicito vuoto o non stringa viene rifiutato, mai silenziosamente sostituito dal default", function () {
+  assert.throws(function () { nl.resolveOptBusinessesRoot({ businessesRoot: "" }, "/tmp/una-radice"); }, /opts\.businessesRoot non valido/);
+  assert.throws(function () { nl.resolveOptBusinessesRoot({ businessesRoot: 123 }, "/tmp/una-radice"); }, /opts\.businessesRoot non valido/);
+});
+
+test("runNewLanding: opts.root esplicito ma non valido fallisce prima di qualunque scrittura, lock incluso", function () {
+  return withTempDirs(function (env) {
+    var dir = writeBusinessDir(env.businessesRoot, "smoke-nl-badroot");
+    var before = fs.readdirSync(env.tmpRoot).sort();
+    return nl.runNewLanding(["--business", dir], {
+      root: "", businessesRoot: env.businessesRoot, stateRoot: env.stateRoot, print: function () {}
+    }).then(
+      function () { assert.fail("doveva essere rifiutato"); },
+      function (err) {
+        assert.equal(err.code, "USAGE");
+        assert.match(err.message, /opts\.root non valido/);
+        var after = fs.readdirSync(env.tmpRoot).sort();
+        assert.deepEqual(after, before, "nessuna scrittura dopo il rifiuto di opts.root");
+        assert.equal(fs.existsSync(nl.lockFilePath(env.stateRoot)), false);
+      }
+    );
+  });
+});
+
+test("runNewLanding: opts.businessesRoot esplicito ma non valido fallisce prima di qualunque scrittura, lock incluso", function () {
+  return withTempDirs(function (env) {
+    var dir = writeBusinessDir(env.businessesRoot, "smoke-nl-badbizroot");
+    var before = fs.readdirSync(env.tmpRoot).sort();
+    return nl.runNewLanding(["--business", dir], {
+      root: env.root, businessesRoot: "   ", stateRoot: env.stateRoot, print: function () {}
+    }).then(
+      function () { assert.fail("doveva essere rifiutato"); },
+      function (err) {
+        assert.equal(err.code, "USAGE");
+        assert.match(err.message, /opts\.businessesRoot non valido/);
+        var after = fs.readdirSync(env.tmpRoot).sort();
+        assert.deepEqual(after, before, "nessuna scrittura dopo il rifiuto di opts.businessesRoot");
+        assert.equal(fs.existsSync(nl.lockFilePath(env.stateRoot)), false);
+      }
+    );
+  });
+});
+
 // ================= preflight: modalità --business =================
 
 test("preflight: --business su cartella valida e senza output preesistente è idoneo", function () {
@@ -292,6 +359,59 @@ test("preflight: dist/<slug> esistente con provenienza corrispondente in lastSuc
     assert.equal(b.eligible, true, JSON.stringify(b.ineligibleReason));
     assert.equal(b.outputAction, "proceed");
     assert.equal(b.outputTrustedMatch, true);
+  });
+});
+
+// ================= --business: wiring reale (parseArgs -> resolveInputSelection -> resolveBusinessesDir) =================
+//
+// A differenza dei test sopra (che costruiscono businessDir a mano e lo
+// passano direttamente a runPreflight, bypassando resolveInputSelection),
+// questi esercitano il percorso pubblico completo via runNewLanding, per
+// dimostrare che un valore ostile per --business non può mai bypassare
+// resolveBusinessesDir attraverso la wiring reale.
+
+test("--business: un tentativo di path traversal viene rifiutato attraverso la wiring reale", function () {
+  return withTempDirs(function (env) {
+    var traversal = path.join(env.businessesRoot, "..", "..", "fuori-da-businesses");
+    return nl.runNewLanding(["--business", traversal, "--dry-run"], {
+      root: env.root, businessesRoot: env.businessesRoot, stateRoot: env.stateRoot, print: function () {}
+    }).then(
+      function () { assert.fail("doveva essere rifiutato"); },
+      function (err) {
+        assert.equal(err.code, "USAGE");
+        assert.match(err.message, /Percorso --business non valido/);
+      }
+    );
+  });
+});
+
+test("--business: un percorso assoluto esterno a businessesRoot viene rifiutato attraverso la wiring reale", function () {
+  return withTempDirs(function (env) {
+    var external = fs.mkdtempSync(path.join(os.tmpdir(), "landing-factory-nl-external-"));
+    return nl.runNewLanding(["--business", external, "--dry-run"], {
+      root: env.root, businessesRoot: env.businessesRoot, stateRoot: env.stateRoot, print: function () {}
+    }).then(
+      function () { assert.fail("doveva essere rifiutato"); },
+      function (err) { assert.equal(err.code, "USAGE"); }
+    ).finally(function () {
+      fs.rmSync(external, { recursive: true, force: true });
+    });
+  });
+});
+
+test("--business: un collegamento simbolico che esce da businessesRoot viene rifiutato attraverso la wiring reale", function () {
+  return withTempDirs(function (env) {
+    var outsideTarget = fs.mkdtempSync(path.join(os.tmpdir(), "landing-factory-nl-escapelink-"));
+    var link = path.join(env.businessesRoot, "link-evasivo");
+    fs.symlinkSync(outsideTarget, link, "dir");
+    return nl.runNewLanding(["--business", link, "--dry-run"], {
+      root: env.root, businessesRoot: env.businessesRoot, stateRoot: env.stateRoot, print: function () {}
+    }).then(
+      function () { assert.fail("doveva essere rifiutato"); },
+      function (err) { assert.equal(err.code, "USAGE"); }
+    ).finally(function () {
+      fs.rmSync(outsideTarget, { recursive: true, force: true });
+    });
   });
 });
 
@@ -389,6 +509,51 @@ test("preflight CSV: --overwrite-business autorizza la sostituzione della cartel
     var bBoth = reportBoth.businesses[0];
     assert.equal(bBoth.outputAction, "overwrite");
     assert.equal(bBoth.eligible, true, JSON.stringify(bBoth.ineligibleReason));
+  });
+});
+
+// ---- CSV: businesses/<slug> è un collegamento simbolico -> sempre ineleggibile, mai bypassabile ----
+
+function withCsvSymlinkFixture(env, name, fn) {
+  var fixtures = writeCsvAndMapping(env.tmpRoot, [name]);
+  var slug = require("./import-csv.js").slugify(name);
+  var outsideTarget = fs.mkdtempSync(path.join(os.tmpdir(), "landing-factory-nl-csvsymlink-"));
+  try {
+    fs.symlinkSync(outsideTarget, path.join(env.businessesRoot, slug), "dir");
+    var selection = nl.resolveInputSelection({ row: 1, mappingPath: fixtures.mappingPath, file: fixtures.csvPath }, env);
+    fn(selection);
+  } finally {
+    fs.rmSync(outsideTarget, { recursive: true, force: true });
+  }
+}
+
+test("preflight CSV: businesses/<slug> è un collegamento simbolico -> ineleggibile per default", function () {
+  withTempDirs(function (env) {
+    withCsvSymlinkFixture(env, "Prova Symlink Csv Default (test automatico)", function (selection) {
+      var report = nl.runPreflight(selection, {}, env);
+      assert.equal(report.businesses[0].eligible, false);
+      assert.match(report.businesses[0].ineligibleReason, /non è un percorso ammissibile/);
+    });
+  });
+});
+
+test("preflight CSV: --resume-existing non bypassa il rifiuto di un collegamento simbolico", function () {
+  withTempDirs(function (env) {
+    withCsvSymlinkFixture(env, "Prova Symlink Csv Resume (test automatico)", function (selection) {
+      var report = nl.runPreflight(selection, { resumeExisting: true }, env);
+      assert.equal(report.businesses[0].eligible, false);
+      assert.match(report.businesses[0].ineligibleReason, /non è un percorso ammissibile/);
+    });
+  });
+});
+
+test("preflight CSV: --overwrite-business (+ --overwrite-output) non bypassa il rifiuto di un collegamento simbolico", function () {
+  withTempDirs(function (env) {
+    withCsvSymlinkFixture(env, "Prova Symlink Csv Overwrite (test automatico)", function (selection) {
+      var report = nl.runPreflight(selection, { overwriteBusiness: true, overwriteOutput: true }, env);
+      assert.equal(report.businesses[0].eligible, false);
+      assert.match(report.businesses[0].ineligibleReason, /non è un percorso ammissibile/);
+    });
   });
 });
 
@@ -655,6 +820,57 @@ test("un fallimento riportato in buildBusinesses().failures produce sempre faile
       assert.equal(state.lastSuccess, null, "un fallimento di build non deve mai valorizzare lastSuccess");
     });
   });
+});
+
+var STUB_BUILD_SUCCESS = {
+  buildBusinesses: function (dirs) {
+    return {
+      results: dirs.map(function (d) {
+        return { slug: path.basename(d), distDir: path.join(d, "fake-dist"), warnings: [], photosUsed: 0, reviewsUsed: 0 };
+      }),
+      failures: []
+    };
+  }
+};
+
+test("run reale con root e businessesRoot distinti: l'import scrive sotto businessesRoot, mai sotto root/businesses; source_file resta relativo a root", function () {
+  var rootA = fs.mkdtempSync(path.join(os.tmpdir(), "landing-factory-nl-rootA-"));
+  var rootB = fs.mkdtempSync(path.join(os.tmpdir(), "landing-factory-nl-rootB-"));
+  var businessesRootB = path.join(rootB, "businesses");
+  fs.mkdirSync(businessesRootB, { recursive: true });
+  var name = "Smoke Nl Root Diviso (test automatico)";
+  var fixtures = writeCsvAndMapping(rootA, [name]);
+  var opts = {
+    root: rootA, businessesRoot: businessesRootB, stateRoot: rootB, print: function () {},
+    buildRunner: STUB_BUILD_SUCCESS, qaRunner: STUB_QA_NO_ISSUES
+  };
+
+  return nl.runNewLanding(["--file", fixtures.csvPath, "--mapping", fixtures.mappingPath, "--row", "1", "--dry-run"], opts)
+    .then(function (preview) {
+      var previewBusinessDir = preview.report.businesses[0].businessDir;
+      var slug = preview.report.businesses[0].slug;
+      assert.equal(previewBusinessDir, path.join(fs.realpathSync(businessesRootB), slug));
+
+      return nl.runNewLanding(["--file", fixtures.csvPath, "--mapping", fixtures.mappingPath, "--row", "1"], opts)
+        .then(function (outcome) {
+          assert.equal(outcome.results[0].status, "success", JSON.stringify(outcome.results[0]));
+
+          // scritta sotto businessesRoot (rootB), mai sotto rootA/businesses (single source of truth)
+          assert.equal(fs.existsSync(path.join(businessesRootB, slug, "data.yaml")), true);
+          assert.equal(fs.existsSync(path.join(rootA, "businesses")), false);
+
+          // il preflight (dry-run) e l'esecuzione reale concordano sullo stesso percorso
+          assert.equal(path.join(businessesRootB, slug), previewBusinessDir);
+
+          // source_file resta relativo a root (rootA), indipendente da businessesRoot (rootB)
+          var writtenData = require("js-yaml").load(fs.readFileSync(path.join(businessesRootB, slug, "data.yaml"), "utf8"));
+          assert.equal(writtenData.source_file, nl.normalizeCsvSourcePath(fixtures.csvPath, rootA));
+        });
+    })
+    .finally(function () {
+      fs.rmSync(rootA, { recursive: true, force: true });
+      fs.rmSync(rootB, { recursive: true, force: true });
+    });
 });
 
 // ================= batch: blocco dell'intero batch, isolamento per-attività =================

@@ -216,3 +216,95 @@ test("due righe distinte che normalizzano allo stesso slug: la seconda importazi
     fs.rmSync(tmpRoot, { recursive: true, force: true });
   }
 });
+
+// ---------- root/businessesRoot: fonte unica di verità con new-landing.js ----------
+
+function writeCsvFixture(dir, name) {
+  var csvPath = path.join(dir, "leads.csv");
+  var mappingPath = path.join(dir, "mapping.yaml");
+  fs.writeFileSync(csvPath, "Nome Attività,Priorità\n" + name + ",alta\n");
+  fs.writeFileSync(
+    mappingPath,
+    "constants:\n  category: beauty-wellness\n  template_id: beauty-wellness-v1\n  preset_id: default\n  mode: PRIVATE_DEMO\ncolumns:\n  \"Nome Attività\": business.name\n  \"Priorità\": priority\n"
+  );
+  return { csvPath: csvPath, mappingPath: mappingPath };
+}
+
+test("importRow: businessesRoot esplicito, diverso da root/businesses, viene onorato — root governa solo source_file", function () {
+  var rootA = fs.mkdtempSync(path.join(os.tmpdir(), "landing-factory-rootA-"));
+  var rootB = fs.mkdtempSync(path.join(os.tmpdir(), "landing-factory-rootB-"));
+  var businessesRootB = path.join(rootB, "businesses");
+  fs.mkdirSync(businessesRootB, { recursive: true });
+  try {
+    var fixtures = writeCsvFixture(rootA, "Prova Root Diviso (test automatico)");
+    var result = importCsv.importRow({
+      file: fixtures.csvPath,
+      mapping: fixtures.mappingPath,
+      row: 1,
+      root: rootA,
+      businessesRoot: businessesRootB
+    });
+
+    // scritto sotto businessesRoot (rootB), MAI sotto rootA/businesses
+    assert.equal(result.businessDir, path.join(fs.realpathSync(businessesRootB), result.slug));
+    assert.equal(fs.existsSync(path.join(rootA, "businesses")), false);
+    assert.ok(fs.existsSync(path.join(result.businessDir, "data.yaml")));
+
+    // source_file resta relativo a root (rootA), non a businessesRoot (rootB)
+    assert.equal(result.data.source_file, path.relative(rootA, fixtures.csvPath));
+  } finally {
+    fs.rmSync(rootA, { recursive: true, force: true });
+    fs.rmSync(rootB, { recursive: true, force: true });
+  }
+});
+
+test("importRow: opts.root/opts.businessesRoot espliciti ma vuoti falliscono subito, senza scrivere nulla (mai un fallback silenzioso)", function () {
+  var tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "landing-factory-validate-"));
+  try {
+    var fixtures = writeCsvFixture(tmpRoot, "Prova Validazione Opts (test automatico)");
+    var before = fs.readdirSync(tmpRoot).sort();
+
+    assert.throws(function () {
+      importCsv.importRow({ file: fixtures.csvPath, mapping: fixtures.mappingPath, row: 1, root: "" });
+    }, /opts\.root non valido/);
+    assert.throws(function () {
+      importCsv.importRow({ file: fixtures.csvPath, mapping: fixtures.mappingPath, row: 1, businessesRoot: "" });
+    }, /opts\.businessesRoot non valido/);
+    assert.throws(function () {
+      importCsv.importRow({ file: fixtures.csvPath, mapping: fixtures.mappingPath, row: 1, root: 42 });
+    }, /opts\.root non valido/);
+
+    var after = fs.readdirSync(tmpRoot).sort();
+    assert.deepEqual(after, before, "nessun file scritto dopo un rifiuto");
+  } finally {
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+  }
+});
+
+test("importRow (standalone): rifiuta un collegamento simbolico al posto della cartella business, anche con force:true", function () {
+  var root = fs.mkdtempSync(path.join(os.tmpdir(), "landing-factory-symlink-"));
+  var businessesRoot = path.join(root, "businesses");
+  fs.mkdirSync(businessesRoot, { recursive: true });
+  var outsideTarget = fs.mkdtempSync(path.join(os.tmpdir(), "landing-factory-symlink-target-"));
+  try {
+    var fixtures = writeCsvFixture(root, "Prova Symlink Standalone (test automatico)");
+    var slug = importCsv.slugify("Prova Symlink Standalone (test automatico)");
+    var link = path.join(businessesRoot, slug);
+    fs.symlinkSync(outsideTarget, link, "dir");
+
+    assert.throws(function () {
+      importCsv.importRow({
+        file: fixtures.csvPath, mapping: fixtures.mappingPath, row: 1,
+        root: root, businessesRoot: businessesRoot, force: true
+      });
+    }, /non è un percorso ammissibile/);
+
+    // il collegamento simbolico stesso non è stato toccato/seguito
+    assert.ok(fs.lstatSync(link).isSymbolicLink());
+    assert.equal(fs.readdirSync(outsideTarget).length, 0);
+  } finally {
+    fs.unlinkSync(path.join(businessesRoot, importCsv.slugify("Prova Symlink Standalone (test automatico)")));
+    fs.rmSync(root, { recursive: true, force: true });
+    fs.rmSync(outsideTarget, { recursive: true, force: true });
+  }
+});

@@ -358,8 +358,14 @@ function preflightOne(item, args, opts) {
     }
 
     result.slug = slug;
-    result.businessDir = path.join(businessesRoot, slug);
-    result.directoryExists = fs.existsSync(result.businessDir);
+    var candidate = pathsUtil.resolveBusinessSlugDir(businessesRoot, slug);
+    if (!candidate) {
+      result.ineligibleReason =
+        "businesses/" + slug + " non è un percorso ammissibile (collegamento simbolico, radice non valida, o fuori da businessesRoot).";
+      return result;
+    }
+    result.businessDir = candidate.path;
+    result.directoryExists = candidate.exists;
 
     var csvDescriptor = csvRowDescriptor(item.file, item.row, root);
     result.sourceKind = csvDescriptor.kind;
@@ -483,6 +489,7 @@ function runPreflight(selection, args, opts) {
 
 async function executeOne(preflightResult, opts) {
   var root = opts.root;
+  var businessesRoot = opts.businessesRoot;
   var stateRoot = opts.stateRoot;
   var slug = preflightResult.slug;
   var businessDir = preflightResult.businessDir;
@@ -515,7 +522,9 @@ async function executeOne(preflightResult, opts) {
         mapping: preflightResult.mappingPath,
         row: preflightResult.csvRow,
         slug: slug,
-        force: preflightResult.directoryAction === "overwrite"
+        force: preflightResult.directoryAction === "overwrite",
+        root: root,
+        businessesRoot: businessesRoot
       });
     } catch (err) {
       return fail("import", err.message);
@@ -640,10 +649,38 @@ function printBatchSummary(results, print) {
 
 // ---------- entry point condiviso ----------
 
+/**
+ * Default a ROOT SOLO quando opts.root è esattamente undefined. Un valore
+ * esplicito non valido (non stringa, vuoto) fallisce subito con un errore
+ * controllato — mai un fallback silenzioso (`opts.root || ROOT`) che
+ * tratterebbe una stringa vuota o un bug del chiamante come "non fornito".
+ */
+function resolveOptRoot(opts) {
+  if (opts.root === undefined) return ROOT;
+  if (typeof opts.root !== "string" || opts.root.trim() === "") {
+    throw usageError("opts.root non valido: deve essere un percorso non vuoto.");
+  }
+  return opts.root;
+}
+
+/**
+ * Stessa logica di resolveOptRoot per opts.businessesRoot: default a
+ * <root>/businesses SOLO se esattamente undefined, altrimenti il valore
+ * esplicito deve essere una stringa non vuota o si fallisce subito, prima
+ * di qualunque parsing/selezione/scrittura.
+ */
+function resolveOptBusinessesRoot(opts, root) {
+  if (opts.businessesRoot === undefined) return path.join(root, "businesses");
+  if (typeof opts.businessesRoot !== "string" || opts.businessesRoot.trim() === "") {
+    throw usageError("opts.businessesRoot non valido: deve essere un percorso non vuoto.");
+  }
+  return opts.businessesRoot;
+}
+
 async function runNewLanding(argv, opts) {
   opts = opts || {};
-  var root = opts.root || ROOT;
-  var businessesRoot = opts.businessesRoot || path.join(root, "businesses");
+  var root = resolveOptRoot(opts);
+  var businessesRoot = resolveOptBusinessesRoot(opts, root);
   var stateRoot = opts.stateRoot || root;
   var print = opts.print || function (s) { console.log(s); };
 
@@ -676,7 +713,7 @@ async function runNewLanding(argv, opts) {
         results.push({ slug: b.slug, status: "failed", stage: "preflight", message: b.ineligibleReason });
         continue;
       }
-      var r = await executeOne(b, { root: root, stateRoot: stateRoot, qaRunner: opts.qaRunner, buildRunner: opts.buildRunner });
+      var r = await executeOne(b, { root: root, businessesRoot: businessesRoot, stateRoot: stateRoot, qaRunner: opts.qaRunner, buildRunner: opts.buildRunner });
       results.push(r);
     }
 
@@ -706,7 +743,9 @@ module.exports = {
   csvRowDescriptor: csvRowDescriptor,
   manualDirDescriptor: manualDirDescriptor,
   descriptorFromStoredProvenance: descriptorFromStoredProvenance,
-  normalizeCsvSourcePath: normalizeCsvSourcePath
+  normalizeCsvSourcePath: normalizeCsvSourcePath,
+  resolveOptRoot: resolveOptRoot,
+  resolveOptBusinessesRoot: resolveOptBusinessesRoot
 };
 
 if (require.main === module) {

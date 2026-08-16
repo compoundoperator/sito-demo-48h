@@ -32,6 +32,20 @@ si rilancia lo stesso comando senza `--dry-run`:
 npm run new-landing -- --file fixtures/leads-example.csv --mapping column-mapping.example.yaml --row 1
 ```
 
+Se il nome nella riga CSV non basta a ricavare automaticamente uno slug
+valido (colonna nome assente, oppure un nome che si riduce a simboli
+senza lettere/numeri), il comando si ferma e chiede di indicarlo a mano
+con `--slug`:
+
+```bash
+npm run new-landing -- --file fixtures/leads-example.csv --mapping column-mapping.example.yaml --row 1 --slug mia-attivita-di-prova
+```
+
+`--slug` è valido **solo** insieme a `--row` (una riga singola): non si
+usa con `--rows`/`--priority` (batch) né con `--business`. Non serve mai
+quando il nome nella riga produce già da solo uno slug valido — è
+un'eccezione per i casi in cui non ci riesce.
+
 **Da una cartella già preparata a mano** (es. dopo aver corretto i dati a
 mano in `businesses/<slug>/data.yaml`):
 
