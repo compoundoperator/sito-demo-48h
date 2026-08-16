@@ -8,5 +8,21 @@ dist/
 qa-output/
 *.qa-report.json
 
+# stato operativo di scripts/new-landing.js (provenienza, lock di
+# esecuzione): locale, mai condiviso, rigenerabile
+.landing-factory/
+
+# foto/immagini ottimizzate intermedie (rigenerabili con
+# npm run optimize-images), scritte più spesso ora che new-landing.js
+# rende pratico l'uso ripetuto/batch
+businesses/*/dist-ready/
+
+# materiale reale dell'operatore (foto/recensioni): mai tracciato per
+# default, a differenza dei due fixture dimostrativi già committati
+businesses/*/dossier/photos/*
+businesses/*/dossier/reviews/*
+!businesses/*/dossier/photos/.gitkeep
+!businesses/*/dossier/reviews/.gitkeep
+
 # file di sistema
 .DS_Store

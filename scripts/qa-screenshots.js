@@ -214,6 +214,37 @@ async function neutralizeStickyForScreenshot(page) {
   await page.waitForTimeout(50);
 }
 
+/**
+ * Controlli statici veloci (nessun browser): stessa logica già eseguita
+ * come prima fase di run() (placeholder irrisolti, fuga di dati interni,
+ * timer di reveal nel JS), riesposta qui per un preflight rapido prima
+ * della QA visiva completa con Playwright. Non sostituisce run(): un
+ * risultato vuoto qui non significa "QA superata", solo "nessun problema
+ * ovvio individuabile senza aprire un browser". Ritorna un array di
+ * stringhe-problema, vuoto se nessuno.
+ */
+function runStaticChecks(distDir, businessDir) {
+  var indexPath = path.join(distDir, "index.html");
+  if (!fs.existsSync(indexPath)) {
+    return ["index.html non trovato in " + distDir];
+  }
+  var html = fs.readFileSync(indexPath, "utf8");
+  var jsPath = path.join(distDir, "js");
+  var jsFiles = fs.existsSync(jsPath) ? fs.readdirSync(jsPath) : [];
+  var jsHasRevealTimer = jsFiles.some(function (f) {
+    var content = fs.readFileSync(path.join(jsPath, f), "utf8");
+    return /setTimeout[^)]*reveal/i.test(content) || /REVEAL_WATCHDOG/i.test(content);
+  });
+
+  var problems = [];
+  var placeholders = grepUnresolvedPlaceholders(html);
+  if (placeholders.length) problems.push("placeholder irrisolti: " + placeholders.join(", "));
+  var leaks = grepInternalDataLeak(html, businessDir);
+  if (leaks.length) problems.push("dati interni presenti nell'HTML: " + leaks.join(", "));
+  if (jsHasRevealTimer) problems.push("rilevato un timer legato al reveal nel JS (non ammesso)");
+  return problems;
+}
+
 async function run(distDir, outDir) {
   var { chromium } = require("playwright");
   var indexPath = path.join(distDir, "index.html");
@@ -411,7 +442,7 @@ function summarize(report) {
   return problems;
 }
 
-module.exports = { run, summarize };
+module.exports = { run, summarize, runStaticChecks };
 
 if (require.main === module) {
   var target = process.argv[2];

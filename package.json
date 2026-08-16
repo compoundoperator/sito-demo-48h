@@ -10,7 +10,8 @@
     "build": "node scripts/build.js",
     "optimize-images": "node scripts/optimize-images.js",
     "qa": "node scripts/qa-screenshots.js",
-    "import:scaffold": "node scripts/import-csv.js"
+    "import:scaffold": "node scripts/import-csv.js",
+    "new-landing": "node scripts/new-landing.js"
   },
   "engines": {
     "node": ">=18"
