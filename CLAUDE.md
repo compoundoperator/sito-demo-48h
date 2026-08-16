@@ -20,20 +20,73 @@ Questo file è una guida, **non sostituisce i controlli tecnici** in
   mano). `businesses/<slug>/dossier/` — materiali grezzi (foto, recensioni).
 - `dist/` — output generato, **mai editato a mano**, rigenerabile con
   `npm run build`.
+- `.landing-factory/` — stato operativo locale di `scripts/new-landing.js`
+  (provenienza, lock di esecuzione), gitignored, mai contenuto
+  cliente/dati personali/segreti.
 
 ## Comandi principali
 
 ```bash
-npm test                                          # tutti i test automatici (node:test) — 117 test
+npm test                                          # tutti i test automatici (node:test) — 161 test
 npm run validate -- businesses/<slug>             # valida un'attività
 npm run build [-- businesses/<slug>]              # genera dist/<slug>/ (senza argomento: tutte)
 npm run optimize-images -- businesses/<slug>      # ottimizza le foto idonee (resize+webp+strip EXIF)
 npm run qa -- dist/<slug>                         # screenshot + controlli automatici
 npm run import:scaffold -- --file <csv> --list --priority high   # elenca righe per priorità
 npm run import:scaffold -- --file <csv> --mapping <m.yaml> --row N  # crea scaffold da riga CSV
+npm run new-landing -- --business businesses/<slug> [--dry-run]     # orchestra l'intera catena (Operations V1)
 ```
 
-Procedura completa passo-passo: vedi [README.md](./README.md).
+Procedura completa passo-passo: vedi [README.md](./README.md). Guida
+operatore non tecnico per `new-landing`: vedi [RUNBOOK.md](./RUNBOOK.md).
+
+## Operations V1 — `scripts/new-landing.js`
+
+Orchestratore sottile della catena esistente (import → validate →
+optimize-images → build → QA) per uso ripetuto/in batch. Non reimplementa
+nessuna regola: chiama solo le funzioni già esportate dagli script
+esistenti. Note per chi lavora sul codice (la guida per l'operatore è
+[RUNBOOK.md](./RUNBOOK.md)):
+
+- **Category-agnostic**: nessun riferimento hardcoded a `beauty-wellness-v1`
+  o ad altra famiglia — usa solo `template_id`/`preset_id` già presenti nei
+  dati, lasciando `validateBusiness` decidere cosa è registrato.
+- **`--business` è ristretto**: accetta solo un percorso che
+  `pathsUtil.resolveBusinessesDir` conferma reale, con symlink risolti,
+  contenuto in `businesses/` e a esattamente un livello di profondità —
+  mai un lettore di cartelle arbitrarie, anche se `buildBusiness()` stesso
+  resta deliberatamente indifferente alla posizione (serve ai fixture
+  sintetici dei test).
+- **Provenienza tramite fingerprint, non percorsi grezzi**: un unico
+  helper condiviso (`csvRowDescriptor`/`descriptorFromStoredProvenance`/
+  `fingerprintOf`, SHA-256 via `crypto` — nessuna nuova dipendenza) deriva
+  l'identità di una fonte sia da una riga CSV corrente sia da
+  `source_file`/`source_row` già salvati in un `data.yaml` esistente,
+  producendo lo stesso fingerprint nei due casi.
+- **Preflight autoritativo a lock già acquisito**: `.landing-factory/run.lock`
+  (mutex globale, `fs.writeFileSync(..., {flag:"wx"})`, mai rimosso
+  automaticamente se sembra residuo) viene acquisito **prima** di eseguire
+  il preflight che decide collisioni/idoneità — mai dopo — così due
+  esecuzioni concorrenti non possono mai agire entrambe su informazioni
+  di collisione ormai superate. `--dry-run` non acquisisce mai il lock.
+  Il lock contiene un `ownerToken` casuale generato ad ogni acquisizione:
+  `releaseLock` lo rimuove solo se il contenuto attuale porta ancora lo
+  stesso token di questa esecuzione, altrimenti lo lascia intatto — così
+  un'esecuzione tardiva (es. rimasta indietro dopo che un operatore ha
+  rimosso a mano un lock residuo e un'altra esecuzione ne ha acquisito uno
+  nuovo) non può mai cancellare il lock di qualcun altro.
+- **QA vuol dire superata, non solo eseguita**: un'attività risulta
+  `success` solo se `qaScreenshots.summarize(report).length === 0` — un
+  qualunque problema riportato produce `failed`, stage `qa`, mai un
+  successo con "avvisi".
+- **Tre flag distruttivi separati** (`--resume-existing`,
+  `--overwrite-business`, `--overwrite-output`), mai un `--force`
+  generico: ognuno autorizza esattamente una cosa, e l'autorizzazione
+  dell'output viene sempre decisa in preflight, prima di qualunque
+  sostituzione della cartella business.
+- Stato/lock vivono in `.landing-factory/` (gitignored, mai contenuto
+  cliente/dati personali/segreti — solo slug, hash, timestamp, nome
+  stage).
 
 ## CI (GitHub Actions)
 
@@ -42,7 +95,10 @@ Procedura completa passo-passo: vedi [README.md](./README.md).
 
 - **`test-and-build`**: `npm ci` → Chromium per Playwright
   (`npx --no-install playwright install --with-deps chromium`) →
-  `npm test` → `npm run validate` su ogni cartella in `businesses/*/` →
+  `npm test` → `node scripts/ci-integration-check.js` (unico punto in cui
+  `new-landing.js` viene esercitato end-to-end con QA Playwright reale,
+  contro un'attività sintetica temporanea che ripulisce da sola) →
+  `npm run validate` su ogni cartella in `businesses/*/` →
   `npm run build` (tutte) → `npm run qa` su ogni sito generato.
 - **`test-optional-deps`**: `npm ci --omit=optional` (sharp escluso) →
   `npm test` — unico punto in cui il percorso "sharp assente" viene
@@ -55,6 +111,7 @@ manuale. Equivalente locale esatto:
 npm ci
 npx --no-install playwright install --with-deps chromium
 npm test
+node scripts/ci-integration-check.js
 for d in businesses/*/; do npm run validate -- "$d"; done
 npm run build
 for d in dist/*/; do npm run qa -- "$d"; done
@@ -66,7 +123,7 @@ npm test
 
 ## Test automatici
 
-`npm test` esegue tutti i file `scripts/*.test.js` (117 test). Oltre ai
+`npm test` esegue tutti i file `scripts/*.test.js` (161 test). Oltre ai
 test originali (validazione, sicurezza, rendering, importer, ottimizzazione
 immagini), tre file esercitano scenari end-to-end su dati interamente
 sintetici, mai scritti sotto `businesses/`:
@@ -81,15 +138,27 @@ sintetici, mai scritti sotto `businesses/`:
   `scripts/build.js`) e determinismo su build ripetute.
 - Test aggiuntivi in `scripts/import-csv.test.js` per import ripetuti su
   più righe e per slug non sicuri o duplicati tra righe diverse.
+- `scripts/new-landing.test.js` — orchestratore Operations V1: parsing
+  argomenti, fingerprint di provenienza, macchina a stati atomica, lock di
+  esecuzione (incluso il fallimento di un secondo run concorrente e il
+  fatto che un lock dall'aspetto residuo non viene mai rimosso da solo),
+  tutti i tipi di collisione (cartella esistente, output esistente, slug
+  duplicati nel batch), `--dry-run` a scrittura/lock zero, e conferma che
+  un problema di QA riportato da `summarize()` reale produce sempre
+  `failed`, mai `success`. La QA visiva vera (Playwright) è iniettabile
+  (`opts.qaRunner`) e non viene mai invocata da questi test — resta
+  esercitata solo da `npm run qa` e da `scripts/ci-integration-check.js`
+  (solo CI, vedi sopra).
 
 **Convenzione obbligatoria per nuovi test**: `buildBusiness()`/
 `buildBusinesses()` scrivono sempre in `dist/<slug>` al repo root,
 condiviso tra tutti i file di test, e `node --test` esegue file diversi in
 parallelo per default. Ogni nuovo test che genera output tramite
-`build.js` deve usare uno slug con prefisso univoco per file (es.
-`smoke-prod-e2e-*`, `smoke-batch-*`) mai riusato in un altro file, e
-ripulire sia la cartella temporanea sia `dist/<slug>` in un blocco
-`finally`.
+`build.js` (o via `new-landing.js`) deve usare uno slug con prefisso
+univoco per file (es. `smoke-prod-e2e-*`, `smoke-batch-*`, `smoke-nl-*`)
+mai riusato in un altro file, e ripulire sia la cartella temporanea sia
+`dist/<slug>`/`qa-output/<slug>`/le eventuali cartelle reali in
+`businesses/<slug>` create da un import CSV reale, in un blocco `finally`.
 
 Cosa dimostrano — e cosa NON dimostrano — questi test: la correttezza
 meccanica della pipeline contro dati sintetici (escaping, validazione,
@@ -194,7 +263,7 @@ devono fallire soltanto perché non è installabile su una data piattaforma.
 modulo — lo richiede solo dentro `loadSharp()`, con `require("sharp")`
 avvolto in `try/catch`, così l'assenza del pacchetto non termina il
 processo Node prima che il codice possa gestirla (verificato installando
-realmente con `npm ci --omit=optional`: 117 test passano comunque, con
+realmente con `npm ci --omit=optional`: 161 test passano comunque, con
 1 solo test saltato — sempre esattamente uno dei due test dipendenti da
 `sharp` in `scripts/optimize-images.test.js`, mai zero e mai entrambi:
 quello che richiede `sharp` per davvero è saltato quando manca, quello che

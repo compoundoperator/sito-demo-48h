@@ -8,7 +8,9 @@ riutilizzabile: **un template master + un file dati per attività**, senza
 duplicare HTML/CSS per ogni cliente.
 
 > Guida operativa rapida (regole, divieti, definizione di "done"):
-> vedi **[CLAUDE.md](./CLAUDE.md)**.
+> vedi **[CLAUDE.md](./CLAUDE.md)**. Per creare landing page senza dover
+> ricordare i singoli comandi (un solo comando, pensato per chi non
+> programma): vedi **[RUNBOOK.md](./RUNBOOK.md)**.
 
 ## Architettura in breve
 
@@ -36,6 +38,7 @@ visivamente — esattamente come richiesto dal brief originale.
 ├── scripts/                     # build, validate, QA, import, sicurezza
 ├── fixtures/leads-example.csv   # esempio fittizio per l'importatore
 ├── dist/                        # output generato (non versionato)
+├── .landing-factory/            # stato/lock di `npm run new-landing` (non versionato)
 └── package.json
 ```
 
@@ -127,7 +130,32 @@ npm run optimize-images -- businesses/<slug>
 npm run qa -- dist/<slug>
 npm run import:scaffold -- --file <csv> --list --priority high
 npm run import:scaffold -- --file <csv> --mapping <mapping.yaml> --row N
+npm run new-landing -- --business businesses/<slug> [--dry-run]   # tutta la catena in un comando
 ```
+
+## Comando unico: `npm run new-landing` (Operations V1)
+
+I passi 1–7 della procedura sopra (import, validazione, ottimizzazione
+immagini, generazione, QA) possono essere eseguiti in un solo comando,
+`npm run new-landing`, invece che uno alla volta. È lo stesso motore già
+descritto sopra — nessuna nuova logica di validazione, sicurezza o
+rendering, solo orchestrazione con:
+
+- un'anteprima `--dry-run` che non scrive **nulla**, su nessun file;
+- un percorso `--business` ristretto a sottocartelle reali di `businesses/`
+  (niente percorsi esterni, niente traversal, anche in forma codificata);
+- provenienza tracciata con un'impronta SHA-256, non con il confronto di
+  percorsi grezzi, così un `--resume-existing` non mescola mai per sbaglio
+  dati di provenienza diversa;
+- tre opzioni distinte per le azioni distruttive (`--resume-existing`,
+  `--overwrite-business`, `--overwrite-output`) — mai un generico `--force`;
+- un blocco di esecuzione reale (`.landing-factory/run.lock`) che rende le
+  esecuzioni davvero sequenziali, mai due in corso insieme;
+- "QA superata" significa sempre zero problemi rilevati, mai solo "QA
+  eseguita".
+
+Guida completa, con esempi copiabili e pensata per chi non programma:
+**[RUNBOOK.md](./RUNBOOK.md)**.
 
 ## Anteprima locale di una landing generata
 
@@ -162,7 +190,7 @@ node scripts/build.js businesses/mia-prova
 - `templates/registry.json` è l'unica fonte ammessa per risolvere
   template e preset: un valore non registrato interrompe il build con
   errore, mai un fallback silenzioso.
-- 117 test automatici (`npm test`) coprono queste regole end-to-end,
+- 161 test automatici (`npm test`) coprono queste regole end-to-end,
   incluso il rendering reale (non solo le singole utility).
 
 ## CI (GitHub Actions)
@@ -174,7 +202,7 @@ nessun segreto richiesto):
 
 | Job | Cosa fa |
 |---|---|
-| `test-and-build` | `npm ci` → Chromium per Playwright → `npm test` → `npm run validate` su ogni attività in `businesses/` → `npm run build` (tutte) → `npm run qa` su ogni sito generato |
+| `test-and-build` | `npm ci` → Chromium per Playwright → `npm test` → `node scripts/ci-integration-check.js` (pipeline completa di `new-landing.js` con QA Playwright reale, su un'attività sintetica temporanea, ripulita da sola) → `npm run validate` su ogni attività in `businesses/` → `npm run build` (tutte) → `npm run qa` su ogni sito generato |
 | `test-optional-deps` | `npm ci --omit=optional` (senza `sharp`) → `npm test` — unico punto in cui il percorso "sharp assente" viene realmente eseguito |
 
 Equivalente locale esatto:
@@ -183,6 +211,7 @@ Equivalente locale esatto:
 npm ci
 npx --no-install playwright install --with-deps chromium
 npm test
+node scripts/ci-integration-check.js
 for d in businesses/*/; do npm run validate -- "$d"; done
 npm run build
 for d in dist/*/; do npm run qa -- "$d"; done
