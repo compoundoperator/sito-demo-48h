@@ -194,3 +194,81 @@ test("il disclaimer del footer resta presente in TEMPLATE_DEMO quando demo_banne
   var html = render.renderPage(ctx);
   assert.ok(html.indexOf('class="footer-disclaimer"') !== -1);
 });
+
+// ---------- pinning: candidati per estrazione condivisa (fissano l'output ATTUALE,
+// pre-refactor, dei 9 pezzi condivisibili — vedi templates/shared/render/common.js —
+// così un cambiamento non intenzionale nel refactor fa fallire questi test) ----------
+
+function fullSectionsCtx() {
+  var ctx = baseCtx();
+  ctx.data.services = [{ name: "Servizio", description: "Descrizione", price_from: 10, icon: "icon-viso" }];
+  ctx.data.strengths = [{ title: "Punto di forza", description: null }];
+  ctx.data.reviews = [{ text: "Ottimo servizio", author: "Cliente Prova", rating: 5, content_origin: "fictional_demo" }];
+  ctx.data.faq = [{ question: "Domanda?", answer: "Risposta." }];
+  return ctx;
+}
+
+// 1. document <head>/metadata
+test("pinning renderHead: theme-color, favicon, css link, title", function () {
+  var html = render.renderPage(baseCtx());
+  assert.ok(html.indexOf('<meta name="theme-color" content="#C1653A">') !== -1);
+  assert.ok(html.indexOf('<link rel="icon" type="image/svg+xml" href="assets/svg/favicon.svg">') !== -1);
+  assert.ok(html.indexOf('<link rel="stylesheet" href="css/style.css">') !== -1);
+  assert.ok(html.indexOf("<title>Attività di prova — Slogan di prova</title>") !== -1);
+});
+
+// 2. header
+test("pinning renderHeader: id=siteHeader, wordmark, nav-toggle contract with base.js", function () {
+  var html = render.renderPage(fullSectionsCtx());
+  assert.ok(html.indexOf('<header class="site-header" id="siteHeader">') !== -1);
+  assert.ok(html.indexOf('<a href="#top" class="wordmark">') !== -1);
+  assert.ok(html.indexOf('<nav class="nav" aria-label="Navigazione principale"><ul class="nav__list">') !== -1);
+  assert.ok(html.indexOf('class="nav-toggle" id="navToggle" aria-expanded="false" aria-controls="mobileMenu"') !== -1);
+});
+
+// 3. desktop navigation
+test("pinning renderNav: nav__link entries match buildSectionList output", function () {
+  var ctx = fullSectionsCtx();
+  var html = render.renderPage(ctx);
+  var sections = render.buildSectionList(ctx.data);
+  sections.forEach(function (s) {
+    assert.ok(html.indexOf('<a class="nav__link" data-nav-link href="#' + s.id + '">') !== -1, "missing nav link for " + s.id);
+  });
+});
+
+// 4. mobile navigation
+test("pinning renderMobileMenu: id=mobileMenu contract with base.js", function () {
+  var html = render.renderPage(fullSectionsCtx());
+  assert.ok(html.indexOf('<div class="mobile-menu" id="mobileMenu"><ul class="mobile-menu__list">') !== -1);
+});
+
+// 5. reviews
+test("pinning renderRecensioni: kicker, heading, disclaimer in non-PRODUCTION", function () {
+  var html = render.renderPage(fullSectionsCtx());
+  assert.ok(html.indexOf('<p class="kicker">Recensioni</p>') !== -1);
+  assert.ok(html.indexOf('<h2 id="recensioni-title">Cosa dicono le nostre clienti</h2>') !== -1);
+  assert.ok(html.indexOf('class="demo-disclaimer"') !== -1);
+});
+
+// 6. FAQ
+test("pinning renderFaq: kicker and heading", function () {
+  var html = render.renderPage(fullSectionsCtx());
+  assert.ok(html.indexOf('<p class="kicker">Domande frequenti</p>') !== -1);
+  assert.ok(html.indexOf('<h2 id="faq-title">Tutto quello che vuoi sapere</h2>') !== -1);
+});
+
+// 7. footer
+test("pinning renderFooter: quick links, id=year contract with base.js", function () {
+  var ctx = fullSectionsCtx();
+  var html = render.renderPage(ctx);
+  assert.ok(html.indexOf('<footer class="site-footer">') !== -1);
+  assert.ok(html.indexOf('<nav class="footer-col" aria-label="Link rapidi"><h4>Link rapidi</h4><ul>') !== -1);
+  assert.ok(html.indexOf('<span id="year">') !== -1);
+});
+
+// 9. WhatsApp floating CTA (candidate 8, the non-PRODUCTION disclaimer, is already
+// pinned above by the two existing "disclaimer del footer" tests)
+test("pinning renderWhatsappFloat: data-whatsapp-cta contract with base.js", function () {
+  var html = render.renderPage(baseCtx());
+  assert.ok(html.indexOf('class="whatsapp-float" data-whatsapp-cta') !== -1);
+});
