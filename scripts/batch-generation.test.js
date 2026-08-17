@@ -73,6 +73,15 @@ function baseTemplateDemo(slug) {
   };
 }
 
+function tradesTemplateVariant(slug) {
+  var data = baseTemplateDemo(slug);
+  data.category = "trades";
+  data.template_id = "trades-v1";
+  data.business.service_areas = ["Zona di prova"];
+  data.services = [{ name: "Servizio di prova", description: null, icon: null }];
+  return data;
+}
+
 function basePrivateDemo(slug) {
   var data = baseTemplateDemo(slug);
   data.mode = "PRIVATE_DEMO";
@@ -245,6 +254,7 @@ test("batch di attività sintetiche valide: isolamento reciproco degli output e 
     { dirName: "no-photos", slug: "smoke-batch-no-photos", data: baseTemplateDemo("smoke-batch-no-photos"), valid: true },
     { dirName: "with-photo", slug: "smoke-batch-with-photo", data: withPhotoVariant("smoke-batch-with-photo"), valid: true, seedPhoto: true },
     { dirName: "many-items", slug: "smoke-batch-many-items", data: manyItemsVariant("smoke-batch-many-items"), valid: true },
+    { dirName: "trades-family", slug: "smoke-batch-trades-family", data: tradesTemplateVariant("smoke-batch-trades-family"), valid: true },
     { dirName: "invalid-template", slug: "smoke-batch-invalid-template", data: invalidTemplateData, valid: false },
     { dirName: "invalid-slug", slug: "Smoke Invalid Slug", data: baseTemplateDemo("Smoke Invalid Slug"), valid: false }
   ];

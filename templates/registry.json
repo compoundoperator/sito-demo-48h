@@ -7,5 +7,14 @@
     ],
     "js": ["templates/shared/js/base.js"],
     "presets": ["default"]
+  },
+  "trades-v1": {
+    "render": "templates/trades-v1/render.js",
+    "css": [
+      "templates/shared/css/base.css",
+      "templates/trades-v1/css/theme.css"
+    ],
+    "js": ["templates/shared/js/base.js"],
+    "presets": ["default"]
   }
 }

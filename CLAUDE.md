@@ -8,11 +8,22 @@ Questo file è una guida, **non sostituisce i controlli tecnici** in
 
 - Generatore **statico a build-time** (Node), mai un framework runtime nel
   sito pubblicato: ogni `dist/<slug>/` è HTML/CSS/JS puro, autonomo.
-- `templates/shared/` — asset e chrome di pagina condivisi da tutte le
-  famiglie (font, icone generiche, reset, bottoni, header/nav, scroll-reveal).
-- `templates/<famiglia>-v1/` — una famiglia di attività (oggi solo
-  `beauty-wellness-v1`; `trades-v1` e `retail-local-v1` sono solo
-  placeholder `TODO.md`, non implementati).
+- `templates/shared/` — asset, chrome di pagina e rendering condivisi da
+  tutte le famiglie: `css/`/`js/`/`assets/` (font, icone generiche, reset,
+  bottoni, header/nav, scroll-reveal) e `render/common.js` (le sole
+  funzioni di rendering davvero generiche — head/metadata, header,
+  navigazione desktop/mobile, recensioni, FAQ, footer, CTA WhatsApp
+  flottante — riusate invariate da ogni famiglia). Hero, servizi/aree di
+  intervento, contatti e lo sprite icone restano sempre specifici di
+  ciascuna famiglia.
+- `templates/<famiglia>-v1/` — una famiglia di attività: oggi
+  `beauty-wellness-v1` (beauty & wellness) e `trades-v1` (attività di
+  preventivo non urgenti — elettricisti, idraulici; mai emergenza/
+  reperibilità 24/7, campi non presenti nello schema; mai un prezzo
+  mostrato). `retail-local-v1` è ancora solo placeholder `TODO.md`, non
+  implementato. Tre famiglie iniziali non sono un tetto fisso: una
+  quarta è legittima quando struttura dei contenuti e volume di lead la
+  giustificano.
 - `templates/registry.json` — allowlist esplicita di `template_id`/`preset_id`
   ammessi. `scripts/build.js` risolve **solo** da qui, mai da percorsi
   costruiti direttamente da input non fidato.
@@ -27,7 +38,7 @@ Questo file è una guida, **non sostituisce i controlli tecnici** in
 ## Comandi principali
 
 ```bash
-npm test                                          # tutti i test automatici (node:test) — 161 test
+npm test                                          # tutti i test automatici (node:test) — 230 test
 npm run validate -- businesses/<slug>             # valida un'attività
 npm run build [-- businesses/<slug>]              # genera dist/<slug>/ (senza argomento: tutte)
 npm run optimize-images -- businesses/<slug>      # ottimizza le foto idonee (resize+webp+strip EXIF)
@@ -97,7 +108,9 @@ esistenti. Note per chi lavora sul codice (la guida per l'operatore è
   (`npx --no-install playwright install --with-deps chromium`) →
   `npm test` → `node scripts/ci-integration-check.js` (unico punto in cui
   `new-landing.js` viene esercitato end-to-end con QA Playwright reale,
-  contro un'attività sintetica temporanea che ripulisce da sola) →
+  per entrambe le famiglie registrate — `beauty-wellness-v1` via
+  `--business`, `trades-v1` via CSV mode reale — contro attività
+  sintetiche temporanee che ripuliscono da sole) →
   `npm run validate` su ogni cartella in `businesses/*/` →
   `npm run build` (tutte) → `npm run qa` su ogni sito generato.
 - **`test-optional-deps`**: `npm ci --omit=optional` (sharp escluso) →
@@ -123,29 +136,39 @@ npm test
 
 ## Test automatici
 
-`npm test` esegue tutti i file `scripts/*.test.js` (161 test). Oltre ai
+`npm test` esegue tutti i file `scripts/*.test.js` (230 test). Oltre ai
 test originali (validazione, sicurezza, rendering, importer, ottimizzazione
 immagini), tre file esercitano scenari end-to-end su dati interamente
-sintetici, mai scritti sotto `businesses/`:
+sintetici, mai scritti sotto `businesses/`, per entrambe le famiglie di
+template implementate:
 
 - `scripts/production-e2e.test.js` — pipeline reale validate → build in
   modalità PRODUCTION (indicizzabilità, JSON-LD, escaping, URL pericolosi,
   path traversal, fughe di dati interni, fallimento chiuso su dati
-  incompleti).
-- `scripts/batch-generation.test.js` — genera 13 attività sintetiche in
-  un'unica esecuzione per dimostrare isolamento reciproco dell'output,
-  rilevamento di slug duplicati (`buildBusinesses`/`findDuplicateSlugs` in
+  incompleti), con una variante `trades-v1` che conferma anche l'assenza
+  di prezzo e la sezione zona servita.
+- `scripts/batch-generation.test.js` — genera attività sintetiche
+  (incluso un caso `trades-v1`) in un'unica esecuzione per dimostrare
+  isolamento reciproco dell'output tra famiglie diverse, rilevamento di
+  slug duplicati (`buildBusinesses`/`findDuplicateSlugs` in
   `scripts/build.js`) e determinismo su build ripetute.
 - Test aggiuntivi in `scripts/import-csv.test.js` per import ripetuti su
-  più righe e per slug non sicuri o duplicati tra righe diverse.
+  più righe, per slug non sicuri o duplicati tra righe diverse, e per la
+  mappatura committata `column-mapping.trades.example.yaml` (forma dello
+  scaffold prodotto, incluso `business.service_areas` indicizzato — non
+  pronto per la validazione senza intervento umano, per progettazione:
+  vedi sotto).
 - `scripts/new-landing.test.js` — orchestratore Operations V1: parsing
   argomenti, fingerprint di provenienza, macchina a stati atomica, lock di
   esecuzione (incluso il fallimento di un secondo run concorrente e il
   fatto che un lock dall'aspetto residuo non viene mai rimosso da solo),
   tutti i tipi di collisione (cartella esistente, output esistente, slug
-  duplicati nel batch), `--dry-run` a scrittura/lock zero, e conferma che
+  duplicati nel batch), `--dry-run` a scrittura/lock zero, conferma che
   un problema di QA riportato da `summarize()` reale produce sempre
-  `failed`, mai `success`. La QA visiva vera (Playwright) è iniettabile
+  `failed`, mai `success`, e un run reale completo in modalità CSV per
+  `trades-v1` (seam `opts.templateId` di `writeCsvAndMapping`) a dimostrare
+  che l'orchestratore funziona identicamente con la seconda famiglia
+  registrata. La QA visiva vera (Playwright) è iniettabile
   (`opts.qaRunner`) e non viene mai invocata da questi test — resta
   esercitata solo da `npm run qa` e da `scripts/ci-integration-check.js`
   (solo CI, vedi sopra).
@@ -263,7 +286,7 @@ devono fallire soltanto perché non è installabile su una data piattaforma.
 modulo — lo richiede solo dentro `loadSharp()`, con `require("sharp")`
 avvolto in `try/catch`, così l'assenza del pacchetto non termina il
 processo Node prima che il codice possa gestirla (verificato installando
-realmente con `npm ci --omit=optional`: 161 test passano comunque, con
+realmente con `npm ci --omit=optional`: 230 test passano comunque, con
 1 solo test saltato — sempre esattamente uno dei due test dipendenti da
 `sharp` in `scripts/optimize-images.test.js`, mai zero e mai entrambi:
 quello che richiede `sharp` per davvero è saltato quando manca, quello che

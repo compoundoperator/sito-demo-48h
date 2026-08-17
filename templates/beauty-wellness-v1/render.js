@@ -10,12 +10,18 @@
  * link di navigazione orfano). Nessun dato viene mai inventato qui:
  * questo file si limita a decidere COME mostrare ciò che esiste.
  *
+ * Le sezioni realmente generiche (head/metadata, header, navigazione
+ * desktop/mobile, recensioni, FAQ, footer, CTA WhatsApp flottante) vivono
+ * in templates/shared/render/common.js e sono riusate qui invariate. Hero,
+ * servizi, punti di forza, atmosfera, contatti e lo sprite icone restano
+ * specifici di questa famiglia.
+ *
  * Tutto il testo proveniente dai dati passa da escapeHtml/escapeAttr
  * prima di finire nel markup.
  */
 
 var esc = require("../../scripts/security/escape.js");
-var urlUtil = require("../../scripts/security/url.js");
+var shared = require("../shared/render/common.js");
 
 var escapeHtml = esc.escapeHtml;
 var escapeAttr = esc.escapeAttr;
@@ -71,31 +77,11 @@ function renderIconSprite() {
   return '<svg aria-hidden="true" style="display:none">' + symbols.join("") + "</svg>";
 }
 
-function whatsappButton(cls, message, label) {
-  return (
-    '<button type="button" class="' + escapeAttr(cls) + '" data-whatsapp-cta data-whatsapp-message="' +
-    escapeAttr(message) + '"><svg aria-hidden="true"><use href="#icon-whatsapp"></use></svg>' + escapeHtml(label) + "</button>"
-  );
-}
-
 function waveDivider(extraClass) {
   return (
     '<div class="section-divider' + (extraClass ? " " + extraClass : "") + '" aria-hidden="true">' +
     '<svg viewBox="0 0 1440 100" preserveAspectRatio="none"><path fill="currentColor" d="M0,32 C240,74 480,0 720,22 C960,44 1200,88 1440,40 L1440,100 L0,100 Z"/></svg></div>'
   );
-}
-
-function nameParts(name) {
-  var idx = name.indexOf(" ");
-  if (idx === -1) return { first: name, rest: "" };
-  return { first: name.slice(0, idx), rest: name.slice(idx + 1) };
-}
-
-function renderWordmark(business) {
-  var parts = nameParts(business.name);
-  var html = escapeHtml(parts.first);
-  if (parts.rest) html += " <span>" + escapeHtml(parts.rest) + "</span>";
-  return html;
 }
 
 function buildSectionList(data) {
@@ -106,46 +92,6 @@ function buildSectionList(data) {
   sections.push({ id: "faq", label: "FAQ", present: (data.faq || []).length > 0 });
   sections.push({ id: "contatti", label: "Contatti", present: true });
   return sections.filter(function (s) { return s.present; });
-}
-
-function renderNav(sections) {
-  return sections
-    .map(function (s) {
-      return '<li><a class="nav__link" data-nav-link href="#' + s.id + '">' + escapeHtml(s.label) + "</a></li>";
-    })
-    .join("");
-}
-
-function renderMobileNav(sections) {
-  return sections
-    .map(function (s) {
-      return '<li><a data-nav-link href="#' + s.id + '">' + escapeHtml(s.label) + "</a></li>";
-    })
-    .join("");
-}
-
-function renderHeader(data, sections, whatsappDefaultMessage) {
-  var wordmark = renderWordmark(data.business);
-  var nav = renderNav(sections);
-  var cta = whatsappButton("btn btn--whatsapp btn--sm nav__cta", whatsappDefaultMessage, "Scrivici");
-  return (
-    '<header class="site-header" id="siteHeader"><div class="container site-header__inner">' +
-    '<a href="#top" class="wordmark">' + wordmark + "</a>" +
-    '<nav class="nav" aria-label="Navigazione principale"><ul class="nav__list">' + nav + "</ul>" +
-    cta +
-    '<button type="button" class="nav-toggle" id="navToggle" aria-expanded="false" aria-controls="mobileMenu" aria-label="Apri il menu di navigazione"><span></span><span></span><span></span></button>' +
-    "</nav></div></header>"
-  );
-}
-
-function renderMobileMenu(data, sections, whatsappDefaultMessage) {
-  return (
-    '<div class="mobile-menu" id="mobileMenu"><ul class="mobile-menu__list">' +
-    renderMobileNav(sections) +
-    "</ul>" +
-    whatsappButton("btn btn--whatsapp", whatsappDefaultMessage, "Scrivici su WhatsApp") +
-    "</div>"
-  );
 }
 
 function findHeroPhoto(data, photoUrlById) {
@@ -163,7 +109,7 @@ function renderHero(data, whatsappDefaultMessage, photoUrlById) {
 
   var actions =
     '<div class="hero-actions">' +
-    whatsappButton("btn btn--whatsapp", whatsappDefaultMessage, "Scrivici su WhatsApp") +
+    shared.whatsappButton("btn btn--whatsapp", whatsappDefaultMessage, "Scrivici su WhatsApp") +
     (buildSectionList(data).some(function (s) { return s.id === "servizi"; })
       ? '<a class="btn btn--ghost" href="#servizi">Scopri i servizi</a>'
       : "") +
@@ -290,58 +236,6 @@ function renderAtmosfera(data) {
   );
 }
 
-function renderRecensioni(data) {
-  var reviews = data.reviews || [];
-  if (!reviews.length) return "";
-  var stars = new Array(5).fill('<svg width="16" height="16"><use href="#icon-star"></use></svg>').join("");
-  var cards = reviews
-    .map(function (r) {
-      var initial = r.author ? r.author.trim().charAt(0).toUpperCase() : "?";
-      return (
-        '<article class="review-card" data-reveal>' +
-        '<div class="review-card__stars" role="img" aria-label="Valutazione: ' + (r.rating || 5) + ' stelle su 5">' + stars + "</div>" +
-        "<blockquote>&quot;" + escapeHtml(r.text) + "&quot;</blockquote>" +
-        '<footer><div class="review-card__avatar" aria-hidden="true">' + escapeHtml(initial) + ".</div>" +
-        "<cite>" + escapeHtml(r.author) + "</cite></footer>" +
-        "</article>"
-      );
-    })
-    .join("");
-
-  var disclaimer =
-    data.mode !== "PRODUCTION"
-      ? '<p class="demo-disclaimer">Nomi, recensioni e valutazioni presenti in questa pagina sono dimostrativi e servono solo a scopo illustrativo.</p>'
-      : "";
-
-  return (
-    '<section class="section section--alt" id="recensioni" aria-labelledby="recensioni-title"><div class="container">' +
-    '<div class="section-head section-head--center" data-reveal><p class="kicker">Recensioni</p>' +
-    '<h2 id="recensioni-title">Cosa dicono le nostre clienti</h2></div>' +
-    '<div class="reviews-grid">' + cards + "</div>" + disclaimer +
-    "</div></section>"
-  );
-}
-
-function renderFaq(data) {
-  var faq = data.faq || [];
-  if (!faq.length) return "";
-  var items = faq
-    .map(function (f) {
-      return (
-        '<details class="faq-item"><summary>' + escapeHtml(f.question) + "</summary>" +
-        '<div class="faq-item__body"><p>' + escapeHtml(f.answer) + "</p></div></details>"
-      );
-    })
-    .join("");
-  return (
-    '<section class="section" id="faq" aria-labelledby="faq-title"><div class="container">' +
-    '<div class="section-head" data-reveal><p class="kicker">Domande frequenti</p>' +
-    '<h2 id="faq-title">Tutto quello che vuoi sapere</h2></div>' +
-    '<div class="faq-list" data-reveal>' + items + "</div>" +
-    "</div></section>"
-  );
-}
-
 function renderContatti(data, whatsappDefaultMessage, mapUrl) {
   var b = data.business;
   var rows = [];
@@ -353,7 +247,7 @@ function renderContatti(data, whatsappDefaultMessage, mapUrl) {
     rows.push("<li><dt>Orari</dt><dd>" + escapeHtml(b.hours) + "</dd></li>");
   }
   rows.push(
-    "<li><dt>WhatsApp</dt><dd>" + whatsappButton("btn btn--whatsapp btn--sm", whatsappDefaultMessage, "Scrivici su WhatsApp") + "</dd></li>"
+    "<li><dt>WhatsApp</dt><dd>" + shared.whatsappButton("btn btn--whatsapp btn--sm", whatsappDefaultMessage, "Scrivici su WhatsApp") + "</dd></li>"
   );
 
   var map =
@@ -395,94 +289,6 @@ function renderContatti(data, whatsappDefaultMessage, mapUrl) {
   );
 }
 
-function renderFooter(data, sections) {
-  var b = data.business;
-  var quickLinks = sections
-    .map(function (s) {
-      return '<li><a data-nav-link href="#' + s.id + '">' + escapeHtml(s.label) + "</a></li>";
-    })
-    .join("");
-
-  var socialItems = [];
-  if (b.social && b.social.instagram) {
-    var ig = urlUtil.sanitizeSocialUrl(b.social.instagram);
-    if (ig) socialItems.push('<li><a href="' + escapeAttr(ig) + '" rel="noopener">Instagram</a></li>');
-  }
-  if (b.social && b.social.facebook) {
-    var fb = urlUtil.sanitizeSocialUrl(b.social.facebook);
-    if (fb) socialItems.push('<li><a href="' + escapeAttr(fb) + '" rel="noopener">Facebook</a></li>');
-  }
-  var socialBlock = socialItems.length ? '<div class="footer-col"><h4>Social</h4><ul>' + socialItems.join("") + "</ul></div>" : "";
-
-  var disclaimer = "";
-  if (data.mode !== "PRODUCTION" && data.disclaimers && data.disclaimers.demo_banner) {
-    disclaimer = '<p class="footer-disclaimer">' + escapeHtml(data.disclaimers.demo_banner) + "</p>";
-  }
-
-  return (
-    '<footer class="site-footer"><div class="container"><div class="footer-grid">' +
-    '<div class="footer-brand"><a href="#top" class="wordmark">' + renderWordmark(b) + "</a>" +
-    (b.intro ? "<p>" + escapeHtml(b.intro) + "</p>" : "") + "</div>" +
-    '<nav class="footer-col" aria-label="Link rapidi"><h4>Link rapidi</h4><ul>' + quickLinks + "</ul></nav>" +
-    socialBlock +
-    "</div>" +
-    '<div class="footer-bottom">' + disclaimer + "<p>© <span id=\"year\"></span></p></div>" +
-    "</div></footer>"
-  );
-}
-
-function renderWhatsappFloat(whatsappDefaultMessage) {
-  return (
-    '<button type="button" class="whatsapp-float" data-whatsapp-cta data-whatsapp-message="' +
-    escapeAttr(whatsappDefaultMessage) + '" aria-label="Contattaci su WhatsApp">' +
-    '<svg aria-hidden="true"><use href="#icon-whatsapp"></use></svg>' +
-    '<span class="whatsapp-float__label" aria-hidden="true">Scrivici</span></button>'
-  );
-}
-
-function renderHead(ctx) {
-  var data = ctx.data;
-  var b = data.business;
-  var title = escapeHtml(b.name) + (b.tagline ? " — " + escapeHtml(b.tagline) : "");
-  var description = b.intro ? escapeHtml(b.intro).slice(0, 300) : escapeHtml(b.name);
-
-  var robotsTag =
-    ctx.allowIndexing
-      ? ""
-      : '<meta name="robots" content="noindex, nofollow">\n  <!-- Demo: richiesta ai motori di ricerca di non indicizzare. Non è un controllo di accesso: chi ha l\'URL diretto può comunque vedere la pagina. -->';
-
-  var canonical = ctx.canonicalUrl ? '<link rel="canonical" href="' + escapeAttr(ctx.canonicalUrl) + '">' : "";
-
-  var jsonLd = "";
-  if (ctx.allowIndexing && ctx.canonicalUrl && b.address && b.address.line) {
-    var ld = {
-      "@context": "https://schema.org",
-      "@type": "LocalBusiness",
-      name: b.name,
-      url: ctx.canonicalUrl,
-      address: b.address.line
-    };
-    jsonLd = '<script type="application/ld+json">' + esc.safeJsonForScriptTag(ld) + "</script>";
-  }
-
-  var cssLinks = ctx.cssHrefs.map(function (href) { return '<link rel="stylesheet" href="' + escapeAttr(href) + '">'; }).join("\n  ");
-
-  return (
-    "<!doctype html>\n<html lang=\"it\">\n<head>\n" +
-    '  <meta charset="utf-8">\n' +
-    '  <meta name="viewport" content="width=device-width, initial-scale=1">\n' +
-    "  <title>" + title + "</title>\n" +
-    '  <meta name="description" content="' + escapeAttr(description) + '">\n' +
-    "  " + robotsTag + "\n" +
-    '  <meta name="theme-color" content="#C1653A">\n' +
-    '  <link rel="icon" type="image/svg+xml" href="' + escapeAttr(ctx.faviconHref) + '">\n' +
-    "  " + canonical + "\n" +
-    "  " + jsonLd + "\n" +
-    "  " + cssLinks + "\n" +
-    "</head>\n<body>\n"
-  );
-}
-
 /**
  * Genera la pagina completa. ctx atteso da scripts/build.js:
  *  - data: dati validati (con photos/reviews già filtrati agli elementi idonei)
@@ -500,11 +306,11 @@ function renderPage(ctx) {
   var sections = buildSectionList(data);
   var photoUrlById = ctx.photoUrlById || {};
 
-  var html = renderHead(ctx);
+  var html = shared.renderHead(ctx, { themeColor: "#C1653A" });
   html += '  <a class="skip-link" href="#main">Vai al contenuto principale</a>\n';
   html += "  " + renderIconSprite() + "\n";
-  html += "  " + renderHeader(data, sections, whatsappDefaultMessage) + "\n";
-  html += "  " + renderMobileMenu(data, sections, whatsappDefaultMessage) + "\n";
+  html += "  " + shared.renderHeader(data, sections, whatsappDefaultMessage) + "\n";
+  html += "  " + shared.renderMobileMenu(sections, whatsappDefaultMessage) + "\n";
   html += '  <main id="main">\n';
   html += "    " + renderHero(data, whatsappDefaultMessage, photoUrlById) + "\n";
   html += "    " + waveDivider("section-divider--to-bg") + "\n";
@@ -512,12 +318,12 @@ function renderPage(ctx) {
   html += "    " + renderPercheNoi(data) + "\n";
   html += "    " + renderAtmosfera(data) + "\n";
   html += "    " + waveDivider("") + "\n";
-  html += "    " + renderRecensioni(data) + "\n";
-  html += "    " + renderFaq(data) + "\n";
+  html += "    " + shared.renderRecensioni(data) + "\n";
+  html += "    " + shared.renderFaq(data) + "\n";
   html += "    " + renderContatti(data, whatsappDefaultMessage, null) + "\n";
   html += "  </main>\n";
-  html += "  " + renderFooter(data, sections) + "\n";
-  html += "  " + renderWhatsappFloat(whatsappDefaultMessage) + "\n";
+  html += "  " + shared.renderFooter(data, sections) + "\n";
+  html += "  " + shared.renderWhatsappFloat(whatsappDefaultMessage) + "\n";
   html += '  <div class="demo-toast" id="demoToast" role="status" aria-live="polite"></div>\n';
   html += '  <script>window.__SITE__ = ' + esc.safeJsonForScriptTag(ctx.siteConfig) + ";</script>\n";
   html += '  <script src="' + escapeAttr(ctx.jsHref) + '"></script>\n';

@@ -1,0 +1,143 @@
+# Impianti Elettrici Demo Alfa — attività interamente immaginaria
+# (TEMPLATE_DEMO). Nessun dato reale: nomi, recensioni e recapiti sono di
+# fantasia, a scopo dimostrativo della famiglia di template trades-v1
+# (attività di preventivo, non urgenti).
+
+category: trades
+template_id: trades-v1
+preset_id: default
+lead_id: "IMPIANTI-ELETTRICI-DEMO-ALFA-001"
+priority: high
+source_file: null
+source_row: null
+
+mode: TEMPLATE_DEMO
+
+business:
+  name: "Impianti Elettrici Demo Alfa"
+  slug: "impianti-elettrici-demo-alfa"
+  logo: null
+  tagline: "Impianti elettrici a regola d'arte, preventivo chiaro"
+  intro: >-
+    Realizzazione, adeguamento e manutenzione di impianti elettrici civili
+    e residenziali. Sopralluogo e preventivo scritto prima di iniziare
+    qualunque lavoro, senza sorprese in fattura.
+  address:
+    line: "Zona Roma Est — indirizzo dimostrativo, nessun civico reale"
+  hours: "Lun–Ven, 8:30–18:00 (orari dimostrativi)"
+  phone_display: null
+  eyebrow: "Impianti elettrici · Roma"
+  trust_stats: null
+  service_areas:
+    - "Zona Roma Est"
+    - "Zona Roma Centro"
+    - "Comuni limitrofi"
+  whatsapp:
+    number: null
+    default_message: "Ciao! Vorrei un preventivo da Impianti Elettrici Demo Alfa."
+  social:
+    instagram: null
+    facebook: null
+  content_origin: fictional_demo
+  source_url: null
+  source_channel: null
+  captured_at: null
+  private_demo_status: not_applicable
+  publication_status: not_applicable
+  internal_notes: "Attività di riferimento del template trades-v1."
+  canonical_url: null
+
+services:
+  - name: "Impianti civili e residenziali"
+    description: "Realizzazione e adeguamento di impianti elettrici per abitazioni e piccoli locali commerciali."
+    price_from: null
+    price_note: null
+    icon: icon-bolt
+  - name: "Quadri elettrici"
+    description: "Installazione e messa a norma di quadri elettrici, con protezioni differenziali e magnetotermiche."
+    price_from: null
+    price_note: null
+    icon: icon-panel
+  - name: "Illuminazione e domotica"
+    description: "Progettazione e installazione di punti luce, dimmer e semplici automazioni per la casa."
+    price_from: null
+    price_note: null
+    icon: icon-bulb
+  - name: "Manutenzione e riparazioni"
+    description: "Interventi di manutenzione ordinaria e riparazione di guasti su impianti esistenti."
+    price_from: null
+    price_note: null
+    icon: icon-wrench
+  - name: "Sopralluogo e preventivo"
+    description: "Visita in loco per valutare l'intervento necessario e consegnare un preventivo scritto."
+    price_from: null
+    price_note: null
+    icon: icon-clipboard
+
+strengths:
+  - title: "Preventivo chiaro prima di iniziare"
+    description: "Nessun lavoro parte senza un preventivo scritto e condiviso con te."
+  - title: "Materiali di qualità"
+    description: "Componenti e materiali elettrici selezionati, senza scorciatoie sulla sicurezza."
+  - title: "Comunicazione diretta via WhatsApp"
+    description: "Aggiornamenti chiari sull'avanzamento del lavoro, senza rincorrere risposte."
+  - title: "Puntualità agli appuntamenti"
+    description: "Rispettiamo gli orari concordati per sopralluoghi e interventi."
+
+photos: []
+# Nessuna fotografia reale per questa attività immaginaria: il dossier
+# resta vuoto e la resa visiva si affida ai placeholder grafici del
+# template, senza mai simulare l'esistenza di foto reali.
+
+reviews:
+  - text: "Preventivo chiaro fin da subito e lavoro consegnato nei tempi concordati."
+    author: "Marco B."
+    rating: 5
+    platform: null
+    content_origin: fictional_demo
+    source_url: null
+    source_channel: null
+    captured_at: null
+    private_demo_status: not_applicable
+    publication_status: not_applicable
+    internal_notes: "Recensione di fantasia per la demo del template — non collegata a nessuna piattaforma reale."
+  - text: "Sopralluogo puntuale e spiegazioni chiare su cosa serviva davvero. Nessuna sorpresa in fattura."
+    author: "Elena V."
+    rating: 5
+    platform: null
+    content_origin: fictional_demo
+    source_url: null
+    source_channel: null
+    captured_at: null
+    private_demo_status: not_applicable
+    publication_status: not_applicable
+    internal_notes: "Recensione di fantasia per la demo del template — non collegata a nessuna piattaforma reale."
+  - text: "Comunicazione comoda su WhatsApp per tutto l'avanzamento dei lavori."
+    author: "Davide P."
+    rating: 5
+    platform: null
+    content_origin: fictional_demo
+    source_url: null
+    source_channel: null
+    captured_at: null
+    private_demo_status: not_applicable
+    publication_status: not_applicable
+    internal_notes: "Recensione di fantasia per la demo del template — non collegata a nessuna piattaforma reale."
+
+faq:
+  - question: "Come richiedo un preventivo?"
+    answer: "Scrivici su WhatsApp raccontandoci brevemente il lavoro da fare: fissiamo un sopralluogo o ti diamo una prima indicazione."
+  - question: "Il sopralluogo è gratuito?"
+    answer: "Informazione dimostrativa: nella versione reale qui va indicata la policy effettiva di questa attività."
+  - question: "In quali zone operate?"
+    answer: "Le zone servite sono indicate nella sezione \"Zone servite\" di questa pagina."
+  - question: "Quanto tempo richiede un intervento tipico?"
+    answer: "Dipende dal tipo di lavoro: dopo il sopralluogo ti forniamo un'indicazione realistica dei tempi."
+  - question: "Come funziona il pagamento?"
+    answer: "Informazione dimostrativa: nella versione reale qui vanno indicate le modalità di pagamento accettate."
+
+contact_form:
+  endpoint: null
+
+disclaimers:
+  demo_banner: "Sito dimostrativo — Impianti Elettrici Demo Alfa è un'attività immaginaria creata a scopo illustrativo. Nomi, recensioni e recapiti sono di fantasia."

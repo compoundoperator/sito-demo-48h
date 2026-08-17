@@ -1,0 +1,315 @@
+/*
+  templates/trades-v1/css/theme.css
+  Stile delle sezioni di contenuto specifiche della famiglia "trades"
+  (preventivo, non urgente): hero, aree di intervento, punti di forza,
+  zona servita, contatti. Usa solo var(--color-*) definiti dal preset e i
+  token strutturali definiti in templates/shared/css/base.css.
+*/
+
+/* ---------- Hero ---------- */
+
+.hero {
+  position: relative;
+  padding-top: var(--space-7);
+  padding-bottom: var(--space-8);
+  overflow: clip;
+}
+
+.hero__grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: var(--space-6);
+}
+
+.hero__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--fs-small);
+  font-weight: 600;
+  color: var(--color-slate-deep);
+  background: var(--color-slate-tint, rgba(91, 107, 116, 0.12));
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-pill);
+  margin-bottom: var(--space-4);
+}
+
+.hero h1 {
+  max-width: 16ch;
+  margin-bottom: var(--space-4);
+}
+
+.hero__lead {
+  max-width: 46ch;
+  font-size: var(--fs-lead);
+  color: var(--color-ink-soft);
+  margin-bottom: var(--space-5);
+}
+
+.hero__trust {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-5);
+  margin-top: var(--space-6);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--color-line);
+}
+
+.hero__trust-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.hero__trust-item strong {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  color: var(--color-blue-deep);
+}
+
+.hero__trust-item span {
+  font-size: 0.8125rem;
+  color: var(--color-ink-soft);
+}
+
+.hero__trust-disclaimer {
+  margin-top: var(--space-3);
+  font-size: 0.75rem;
+  color: var(--color-ink-soft);
+}
+
+.hero__visual {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  border-radius: 8px 32px 8px 32px;
+  background: linear-gradient(155deg, var(--color-bg-alt), var(--color-slate-tint, rgba(91, 107, 116, 0.12)) 55%, var(--color-blue) 165%);
+  overflow: hidden;
+  box-shadow: var(--shadow-lift);
+}
+
+.hero__visual::before,
+.hero__visual::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+}
+
+.hero__visual::before {
+  width: 55%;
+  aspect-ratio: 1;
+  right: -12%;
+  top: -10%;
+  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.5), transparent 70%);
+}
+
+.hero__visual::after {
+  width: 70%;
+  aspect-ratio: 1;
+  left: -20%;
+  bottom: -22%;
+  background: radial-gradient(circle at 60% 40%, rgba(29, 72, 99, 0.35), transparent 70%);
+}
+
+.hero__visual-label {
+  position: absolute;
+  left: var(--space-4);
+  bottom: var(--space-4);
+  right: var(--space-4);
+  z-index: 1;
+  color: var(--color-ink);
+  background: rgba(245, 247, 249, 0.88);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-sm);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
+@media (min-width: 960px) {
+  .hero__grid {
+    grid-template-columns: 1.05fr 0.95fr;
+    align-items: center;
+    gap: var(--space-8);
+  }
+}
+
+/* ---------- Aree di intervento ---------- */
+
+.services-grid {
+  display: grid;
+  gap: var(--space-5);
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .services-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .services-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.service-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-card);
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  transition: transform var(--transition-base), box-shadow var(--transition-base), border-color var(--transition-base);
+}
+
+.service-card:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-soft);
+  border-color: transparent;
+}
+
+.service-card__icon {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 6px 16px 6px 16px;
+  background: var(--color-bg-alt);
+  color: var(--color-blue-deep);
+}
+
+.service-card__icon svg {
+  width: 28px;
+  height: 28px;
+}
+
+.service-card h3 {
+  font-size: 1.25rem;
+}
+
+.service-card p {
+  color: var(--color-ink-soft);
+  font-size: 0.9375rem;
+  flex-grow: 1;
+}
+
+/* ---------- Perché sceglierci ---------- */
+
+.why-list {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.why-item {
+  display: grid;
+  gap: var(--space-4);
+  align-items: center;
+  padding-block: var(--space-5);
+}
+
+.why-item:not(:last-child) {
+  border-bottom: 1px solid var(--color-line);
+}
+
+.why-item__index {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  color: var(--color-amber-deep);
+}
+
+.why-item h3 {
+  margin-block: var(--space-2);
+}
+
+.why-item p {
+  color: var(--color-ink-soft);
+  max-width: 55ch;
+}
+
+@media (min-width: 768px) {
+  /* Vedi la nota identica in beauty-wellness-v1/css/theme.css: `order` da
+     solo scambia l'ordine di piazzamento, non la dimensione delle colonne,
+     quindi le due dichiarazioni per gli elementi pari vanno invertite
+     insieme a grid-template-columns. */
+  .why-item {
+    grid-template-columns: 120px 1fr;
+  }
+
+  .why-item__index {
+    order: 0;
+  }
+
+  .why-item__body {
+    order: 1;
+  }
+
+  .why-item:nth-child(even) {
+    grid-template-columns: 1fr 120px;
+  }
+
+  .why-item:nth-child(even) .why-item__index {
+    order: 1;
+  }
+
+  .why-item:nth-child(even) .why-item__body {
+    order: 0;
+  }
+}
+
+/* ---------- Zona servita ---------- */
+
+.zone-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.zone-chip {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-pill);
+  padding: var(--space-2) var(--space-4);
+  font-size: 0.9375rem;
+  color: var(--color-ink-soft);
+}
+
+/* ---------- Contatti ---------- */
+
+.contact-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  max-width: 640px;
+}
+
+.contact-list {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.contact-list li {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+}
+
+.contact-list dt {
+  font-weight: 600;
+  min-width: 90px;
+  color: var(--color-blue-deep);
+}
+
+.contact-list dd {
+  margin: 0;
+  color: var(--color-ink-soft);
+}
+
+.contact-list dd a {
+  color: inherit;
+  text-decoration: underline;
+}
