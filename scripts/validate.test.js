@@ -253,6 +253,78 @@ test("foto con persone riconoscibili e consenso confermato è idonea in PRODUCTI
   assert.equal(result.filtered.photos.length, 1);
 });
 
+// ---------- business.service_areas ----------
+
+test("service_areas con valori validi è accettato", function () {
+  var data = clone(baseBusiness());
+  data.business.service_areas = ["Zona Roma Est", "Zona Roma Centro"];
+  var result = validateBusiness(data, null);
+  assert.equal(result.valid, true, JSON.stringify(result.errors));
+});
+
+test("service_areas assente è accettato", function () {
+  var data = clone(baseBusiness());
+  var result = validateBusiness(data, null);
+  assert.equal(result.valid, true, JSON.stringify(result.errors));
+});
+
+test("service_areas null è accettato", function () {
+  var data = clone(baseBusiness());
+  data.business.service_areas = null;
+  var result = validateBusiness(data, null);
+  assert.equal(result.valid, true, JSON.stringify(result.errors));
+});
+
+test("service_areas vuoto ([]) è accettato", function () {
+  var data = clone(baseBusiness());
+  data.business.service_areas = [];
+  var result = validateBusiness(data, null);
+  assert.equal(result.valid, true, JSON.stringify(result.errors));
+});
+
+test("service_areas con 21 elementi è rifiutato (maxItems: 20)", function () {
+  var data = clone(baseBusiness());
+  data.business.service_areas = [];
+  for (var i = 0; i < 21; i++) data.business.service_areas.push("Zona " + i);
+  var result = validateBusiness(data, null);
+  assert.equal(result.valid, false);
+});
+
+test("service_areas con voci duplicate è rifiutato (uniqueItems)", function () {
+  var data = clone(baseBusiness());
+  data.business.service_areas = ["Zona Roma Est", "Zona Roma Est"];
+  var result = validateBusiness(data, null);
+  assert.equal(result.valid, false);
+});
+
+test("service_areas con voce solo spazi è rifiutato (pattern: \\S)", function () {
+  var data = clone(baseBusiness());
+  data.business.service_areas = ["   "];
+  var result = validateBusiness(data, null);
+  assert.equal(result.valid, false);
+});
+
+test("service_areas con voce di 1 carattere è rifiutato (minLength: 2)", function () {
+  var data = clone(baseBusiness());
+  data.business.service_areas = ["x"];
+  var result = validateBusiness(data, null);
+  assert.equal(result.valid, false);
+});
+
+test("service_areas con voce di 121 caratteri è rifiutato (maxLength: 120)", function () {
+  var data = clone(baseBusiness());
+  data.business.service_areas = ["x".repeat(121)];
+  var result = validateBusiness(data, null);
+  assert.equal(result.valid, false);
+});
+
+test("service_areas con voce non stringa è rifiutato", function () {
+  var data = clone(baseBusiness());
+  data.business.service_areas = [42];
+  var result = validateBusiness(data, null);
+  assert.equal(result.valid, false);
+});
+
 // ---------- registry ----------
 
 test("template_id non registrato viene rifiutato", function () {
