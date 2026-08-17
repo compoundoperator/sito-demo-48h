@@ -140,15 +140,24 @@ Il riepilogo finale mostra, per ogni attività:
 
 ## Disponibile ora / pianificato in futuro
 
-**Disponibile ora**: solo la famiglia `beauty-wellness-v1` (parrucchieri,
-centri estetici, spa e attività simili). `new-landing` non presuppone mai
-questa famiglia per nome: usa qualunque `template_id`/`preset_id` risulti
-già presente e registrato nei dati dell'attività.
+**Disponibile ora**: due famiglie.
 
-**Pianificato in futuro, non ancora implementato**: le famiglie
-`trades-v1` (idraulici, elettricisti, ecc.) e `retail-local-v1` (negozi
-locali) esistono solo come documento di progetto (`TODO.md`), senza
-codice. Quando una nuova famiglia verrà registrata in
+- `beauty-wellness-v1` — parrucchieri, centri estetici, spa e attività
+  simili. Esempio di mappatura CSV: `column-mapping.example.yaml`.
+- `trades-v1` — attività di preventivo **non urgenti** (idraulici,
+  elettricisti). Comunica lavoro pianificato e richiesta di preventivo,
+  mai reperibilità 24/7 o intervento urgente: nessun prezzo viene mai
+  mostrato in pagina, va sempre richiesto un preventivo. Esempio di
+  mappatura CSV: `column-mapping.trades.example.yaml` (include anche le
+  colonne indicizzate per le zone servite, `business.service_areas[n]`).
+
+`new-landing` non presuppone mai una famiglia per nome: usa qualunque
+`template_id`/`preset_id` risulti già presente e registrato nei dati
+dell'attività (nella mappatura CSV, nel blocco `constants:`).
+
+**Pianificato in futuro, non ancora implementato**: la famiglia
+`retail-local-v1` (negozi locali) esiste solo come documento di progetto
+(`TODO.md`), senza codice. Quando una nuova famiglia verrà registrata in
 `templates/registry.json`, funzionerà automaticamente anche con
 `new-landing`, senza bisogno di modificare questo comando.
 

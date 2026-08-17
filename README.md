@@ -22,21 +22,33 @@ visivamente — esattamente come richiesto dal brief originale.
 ```
 /
 ├── templates/
-│   ├── shared/                 # font, icone, reset, header/nav, bottoni,
-│   │                           # whatsapp flottante, scroll-reveal — condivisi
-│   ├── beauty-wellness-v1/     # unica famiglia implementata
-│   │   ├── render.js           # funzioni di rendering, sezioni condizionali
+│   ├── shared/                 # render (funzioni generiche), css/js/asset
+│   │   │                       # condivisi da qualunque famiglia: font, icone
+│   │   │                       # generiche, reset, bottoni, header/nav,
+│   │   │                       # recensioni, FAQ, footer, whatsapp flottante,
+│   │   │                       # scroll-reveal
+│   │   └── render/common.js    # head/header/nav/recensioni/FAQ/footer/whatsapp
+│   ├── beauty-wellness-v1/     # famiglia implementata: beauty & wellness
+│   │   ├── render.js           # hero/servizi/perché-noi/atmosfera/contatti
 │   │   ├── css/theme.css       # stile delle sezioni di questa famiglia
 │   │   └── presets/default/tokens.css  # palette colori
-│   ├── trades-v1/               # FUTURO — solo TODO.md, non implementato
+│   ├── trades-v1/               # famiglia implementata: preventivo, non urgente
+│   │   │                        # (elettricisti, idraulici)
+│   │   ├── render.js            # hero/aree-di-intervento/perché-noi/zona-servita/contatti
+│   │   ├── css/theme.css        # stile delle sezioni di questa famiglia
+│   │   └── presets/default/tokens.css  # palette colori
 │   └── retail-local-v1/         # FUTURO — solo TODO.md, non implementato
 │   └── registry.json            # allowlist di template_id/preset_id ammessi
 ├── businesses/
-│   ├── luce-beauty-studio/      # TEMPLATE_DEMO — attività immaginaria
-│   └── minimal-beauty-demo/     # attività di prova, sezioni volutamente assenti
+│   ├── luce-beauty-studio/            # TEMPLATE_DEMO — attività immaginaria (beauty-wellness-v1)
+│   ├── minimal-beauty-demo/           # attività di prova, sezioni volutamente assenti
+│   ├── scintilla-impianti-elettrici/  # TEMPLATE_DEMO — attività immaginaria (trades-v1)
+│   └── minimal-trades-demo/           # attività di prova, sezioni volutamente assenti
 ├── schema/business.schema.json  # JSON Schema dei dati (validato con Ajv)
 ├── scripts/                     # build, validate, QA, import, sicurezza
 ├── fixtures/leads-example.csv   # esempio fittizio per l'importatore
+├── column-mapping.example.yaml         # esempio di mappatura CSV per beauty-wellness-v1
+├── column-mapping.trades.example.yaml  # esempio di mappatura CSV per trades-v1
 ├── dist/                        # output generato (non versionato)
 ├── .landing-factory/            # stato/lock di `npm run new-landing` (non versionato)
 └── package.json
@@ -94,7 +106,10 @@ questa variabile, potrebbe essere necessario il comando sopra.
    Crea `businesses/<slug>/data.yaml` con i soli campi presenti nel foglio.
    I campi di provenienza/modalità che nessuna colonna può dedurre
    restano `TODO_COMPLETARE`: `npm run validate` fallirà finché non
-   vengono completati a mano — **mai un dato inventato**.
+   vengono completati a mano — **mai un dato inventato**. Per `trades-v1`
+   (attività di preventivo, elettricisti/idraulici) esiste un esempio di
+   mappatura analogo, `column-mapping.trades.example.yaml`, che include
+   anche le colonne indicizzate per `business.service_areas[n]`.
 2. **Completare a mano** `data.yaml` (provenienza, modalità, servizi,
    punti di forza, FAQ, contatti...) e curare `dossier/photos/` +
    `dossier/reviews/` con i materiali reali forniti, se presenti.
@@ -190,8 +205,9 @@ node scripts/build.js businesses/mia-prova
 - `templates/registry.json` è l'unica fonte ammessa per risolvere
   template e preset: un valore non registrato interrompe il build con
   errore, mai un fallback silenzioso.
-- 161 test automatici (`npm test`) coprono queste regole end-to-end,
-  incluso il rendering reale (non solo le singole utility).
+- 230 test automatici (`npm test`) coprono queste regole end-to-end,
+  incluso il rendering reale (non solo le singole utility), per entrambe
+  le famiglie di template implementate.
 
 ## CI (GitHub Actions)
 
@@ -202,7 +218,7 @@ nessun segreto richiesto):
 
 | Job | Cosa fa |
 |---|---|
-| `test-and-build` | `npm ci` → Chromium per Playwright → `npm test` → `node scripts/ci-integration-check.js` (pipeline completa di `new-landing.js` con QA Playwright reale, su un'attività sintetica temporanea, ripulita da sola) → `npm run validate` su ogni attività in `businesses/` → `npm run build` (tutte) → `npm run qa` su ogni sito generato |
+| `test-and-build` | `npm ci` → Chromium per Playwright → `npm test` → `node scripts/ci-integration-check.js` (pipeline completa di `new-landing.js` con QA Playwright reale, su attività sintetiche temporanee per entrambe le famiglie registrate — beauty-wellness-v1 via `--business`, trades-v1 via CSV mode reale — ripulite da sole) → `npm run validate` su ogni attività in `businesses/` → `npm run build` (tutte) → `npm run qa` su ogni sito generato |
 | `test-optional-deps` | `npm ci --omit=optional` (senza `sharp`) → `npm test` — unico punto in cui il percorso "sharp assente" viene realmente eseguito |
 
 Equivalente locale esatto:
@@ -240,8 +256,10 @@ un vero cliente pagante"** — sono quattro stati distinti:
   sempre da curare a mano, mai importate automaticamente.
 - Nessuna vera riservatezza tecnica per `PRIVATE_DEMO` in questa fase:
   solo anteprima locale o materiale screenshot/video.
-- `trades-v1` e `retail-local-v1` sono solo placeholder documentati, non
-  implementati.
+- `retail-local-v1` è ancora solo un placeholder documentato, non
+  implementato (`trades-v1` è ora implementato: attività di preventivo,
+  non urgenti — elettricisti, idraulici — mai richieste di emergenza/
+  reperibilità 24/7, campi non presenti nello schema).
 - Nessuna pipeline di deploy automatico è implementata: la pubblicazione
   resta un passo manuale, esplicitamente autorizzato.
 - I test end-to-end aggiunti (`scripts/production-e2e.test.js`,
