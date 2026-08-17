@@ -1,4 +1,4 @@
-# Scintilla Impianti Elettrici — attività interamente immaginaria
+# Impianti Elettrici Demo Alfa — attività interamente immaginaria
 # (TEMPLATE_DEMO). Nessun dato reale: nomi, recensioni e recapiti sono di
 # fantasia, a scopo dimostrativo della famiglia di template trades-v1
 # (attività di preventivo, non urgenti).
@@ -6,7 +6,7 @@
 category: trades
 template_id: trades-v1
 preset_id: default
-lead_id: "SCINTILLA-DEMO-001"
+lead_id: "IMPIANTI-ELETTRICI-DEMO-ALFA-001"
 priority: high
 source_file: null
 source_row: null
@@ -14,8 +14,8 @@ source_row: null
 mode: TEMPLATE_DEMO
 
 business:
-  name: "Scintilla Impianti Elettrici"
-  slug: "scintilla-impianti-elettrici"
+  name: "Impianti Elettrici Demo Alfa"
+  slug: "impianti-elettrici-demo-alfa"
   logo: null
   tagline: "Impianti elettrici a regola d'arte, preventivo chiaro"
   intro: >-
@@ -34,7 +34,7 @@ business:
     - "Comuni limitrofi"
   whatsapp:
     number: null
-    default_message: "Ciao! Vorrei un preventivo da Scintilla Impianti Elettrici."
+    default_message: "Ciao! Vorrei un preventivo da Impianti Elettrici Demo Alfa."
   social:
     instagram: null
     facebook: null
@@ -140,4 +140,4 @@ contact_form:
   endpoint: null
 
 disclaimers:
-  demo_banner: "Sito dimostrativo — Scintilla Impianti Elettrici è un'attività immaginaria creata a scopo illustrativo. Nomi, recensioni e recapiti sono di fantasia."
+  demo_banner: "Sito dimostrativo — Impianti Elettrici Demo Alfa è un'attività immaginaria creata a scopo illustrativo. Nomi, recensioni e recapiti sono di fantasia."

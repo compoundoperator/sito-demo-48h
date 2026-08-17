@@ -53,8 +53,8 @@
   --radius-pill: 999px;
   --radius-sm: 10px;
 
-  --shadow-soft: 0 12px 32px -16px rgba(43, 33, 28, 0.28);
-  --shadow-lift: 0 20px 40px -18px rgba(43, 33, 28, 0.35);
+  --shadow-soft: 0 12px 32px -16px rgba(var(--color-shadow-rgb), 0.28);
+  --shadow-lift: 0 20px 40px -18px rgba(var(--color-shadow-rgb), 0.35);
 
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --transition-fast: 200ms var(--ease-out);

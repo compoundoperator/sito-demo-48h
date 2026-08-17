@@ -261,7 +261,7 @@ function renderPage(ctx) {
   html += "    " + renderAreeDiIntervento(data) + "\n";
   html += "    " + renderPercheNoi(data) + "\n";
   html += "    " + renderZonaServita(data) + "\n";
-  html += "    " + shared.renderRecensioni(data) + "\n";
+  html += "    " + shared.renderRecensioni(data, { heading: "Cosa dicono i nostri clienti" }) + "\n";
   html += "    " + shared.renderFaq(data) + "\n";
   html += "    " + renderContatti(data, whatsappDefaultMessage) + "\n";
   html += "  </main>\n";

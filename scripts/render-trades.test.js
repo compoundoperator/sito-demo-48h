@@ -88,6 +88,8 @@ test("la navigazione desktop corrisponde esattamente alle sezioni effettivamente
   sections.forEach(function (s) {
     assert.ok(html.indexOf('<a class="nav__link" data-nav-link href="#' + s.id + '">') !== -1, "missing nav link for " + s.id);
   });
+  assert.ok(html.indexOf('<h2 id="recensioni-title">Cosa dicono i nostri clienti</h2>') !== -1);
+  assert.equal(html.indexOf("Cosa dicono le nostre clienti"), -1);
 });
 
 // ---------- service_areas / zona servita ----------

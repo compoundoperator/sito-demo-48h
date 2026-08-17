@@ -42,7 +42,7 @@ visivamente — esattamente come richiesto dal brief originale.
 ├── businesses/
 │   ├── luce-beauty-studio/            # TEMPLATE_DEMO — attività immaginaria (beauty-wellness-v1)
 │   ├── minimal-beauty-demo/           # attività di prova, sezioni volutamente assenti
-│   ├── scintilla-impianti-elettrici/  # TEMPLATE_DEMO — attività immaginaria (trades-v1)
+│   ├── impianti-elettrici-demo-alfa/  # TEMPLATE_DEMO — attività immaginaria (trades-v1)
 │   └── minimal-trades-demo/           # attività di prova, sezioni volutamente assenti
 ├── schema/business.schema.json  # JSON Schema dei dati (validato con Ajv)
 ├── scripts/                     # build, validate, QA, import, sicurezza

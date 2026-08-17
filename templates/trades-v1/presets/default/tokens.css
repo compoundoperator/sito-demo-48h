@@ -35,6 +35,11 @@
   --color-gold: var(--color-amber);
   --color-gold-deep: var(--color-amber-deep);
 
+  /* Componenti RGB di --color-ink (#1c2b33), per comporre rgba() a
+     opacità variabile nelle ombre condivise (templates/shared/css/base.css)
+     senza che quel file riferisca mai un colore letterale di famiglia. */
+  --color-shadow-rgb: 28, 43, 51;
+
   --color-header-scrolled-bg: rgba(245, 247, 249, 0.88);
 
   --color-footer-text: rgba(245, 247, 249, 0.85);

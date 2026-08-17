@@ -33,6 +33,11 @@
   --color-accent-strong: var(--color-terracotta-darkest);
   --color-accent-base: var(--color-terracotta);
 
+  /* Componenti RGB di --color-ink (#2b211c), per comporre rgba() a
+     opacità variabile nelle ombre condivise (templates/shared/css/base.css)
+     senza che quel file riferisca mai un colore letterale di famiglia. */
+  --color-shadow-rgb: 43, 33, 28;
+
   --color-header-scrolled-bg: rgba(251, 246, 240, 0.86);
   --color-bg-translucent: rgba(251, 246, 240, 0.88);
   --color-hero-visual-mid: #ead9c5;
