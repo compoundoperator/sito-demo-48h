@@ -1,0 +1,44 @@
+/*
+  Preset "default" per trades-v1 — palette "Blu tecnico & Ardesia".
+  Unico file che definisce i valori di colore: template/theme usano
+  esclusivamente var(--color-*), mai un hex literal fuori da qui.
+*/
+
+:root {
+  --color-bg: #f5f7f9;
+  --color-bg-alt: #e8edf1;
+  --color-surface: #ffffff;
+  --color-ink: #1c2b33;
+  --color-ink-soft: #4d5f68;
+  --color-blue: #2f6690;
+  --color-blue-deep: #1d4863;
+  --color-blue-darkest: #163a4f;
+  --color-slate: #5b6b74;
+  --color-slate-deep: #3f4d54;
+  --color-slate-tint: rgba(91, 107, 116, 0.12);
+  --color-amber: #c98a2b;
+  --color-amber-deep: #8f6118;
+  --color-line: #d7dee3;
+  --color-whatsapp: #25d366;
+  --color-whatsapp-deep: #1da851;
+
+  --color-on-blue: #f5f7f9;
+
+  /* Alias verso i nomi neutri usati da templates/shared/css/base.css (chrome
+     condiviso da qualunque famiglia): valori identici a quelli sopra, così
+     il chrome condiviso si adatta alla palette di questa famiglia senza mai
+     riferire un nome di variabile specifico di beauty-wellness-v1. */
+  --color-accent: var(--color-blue-deep);
+  --color-on-accent: var(--color-on-blue);
+  --color-accent-strong: var(--color-blue-darkest);
+  --color-accent-base: var(--color-blue);
+  --color-gold: var(--color-amber);
+  --color-gold-deep: var(--color-amber-deep);
+
+  --color-header-scrolled-bg: rgba(245, 247, 249, 0.88);
+
+  --color-footer-text: rgba(245, 247, 249, 0.85);
+  --color-footer-text-soft: rgba(245, 247, 249, 0.7);
+  --color-footer-text-dim: rgba(245, 247, 249, 0.6);
+  --color-footer-border: rgba(245, 247, 249, 0.14);
+}
