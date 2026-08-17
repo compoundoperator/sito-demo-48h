@@ -107,11 +107,12 @@ function writeCsvAndMapping(dir, rowNames, opts) {
   var csvPath = path.join(dir, "leads.csv");
   fs.writeFileSync(csvPath, csvLines.join("\n") + "\n", "utf8");
   var templateId = opts.templateId || "beauty-wellness-v1";
+  var category = opts.category || "beauty-wellness";
   var mappingPath = path.join(dir, "mapping.yaml");
   fs.writeFileSync(
     mappingPath,
     "constants:\n" +
-      "  category: beauty-wellness\n" +
+      "  category: " + category + "\n" +
       "  template_id: " + templateId + "\n" +
       "  preset_id: default\n" +
       "  mode: TEMPLATE_DEMO\n" +
@@ -791,6 +792,26 @@ test("run reale completo con QA iniettata senza problemi: successo, stato succes
       assert.equal(fs.existsSync(path.join(ROOT, "dist", "smoke-nl-happy", "index.html")), true);
     }).finally(function () {
       cleanupRealDistAndQa("smoke-nl-happy");
+    });
+  });
+});
+
+test("run reale completo in modalità CSV con trades-v1 (seam opts.templateId): successo end-to-end attraverso la seconda famiglia registrata", function () {
+  return withTempDirs(function (env) {
+    var name = "Smoke Nl Trades (test automatico)";
+    var slug = require("./import-csv.js").slugify(name);
+    var fixtures = writeCsvAndMapping(env.tmpRoot, [name], { templateId: "trades-v1", category: "trades" });
+    return nl.runNewLanding(["--file", fixtures.csvPath, "--mapping", fixtures.mappingPath, "--row", "1"], {
+      root: ROOT, businessesRoot: env.businessesRoot, stateRoot: env.stateRoot, print: function () {},
+      qaRunner: STUB_QA_NO_ISSUES
+    }).then(function (outcome) {
+      assert.equal(outcome.results[0].status, "success", JSON.stringify(outcome.results[0]));
+      var state = nl.readState(env.stateRoot)[slug];
+      assert.equal(state.current.status, "success");
+      assert.ok(state.lastSuccess);
+      assert.equal(fs.existsSync(path.join(ROOT, "dist", slug, "index.html")), true);
+    }).finally(function () {
+      cleanupRealDistAndQa(slug);
     });
   });
 });

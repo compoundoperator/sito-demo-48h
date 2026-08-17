@@ -87,6 +87,18 @@ function baseProductionFixture(slug) {
   };
 }
 
+function tradesProductionFixture(slug) {
+  var data = baseProductionFixture(slug);
+  data.category = "trades";
+  data.template_id = "trades-v1";
+  data.business.name = "Impianti Prova E2E (esempio fittizio)";
+  data.business.service_areas = ["Zona di prova"];
+  data.services = [
+    { name: "Servizio di prova (esempio fittizio)", description: null, icon: null }
+  ];
+  return data;
+}
+
 function writeBusiness(slug, data) {
   var tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "landing-factory-prod-e2e-"));
   var businessDir = path.join(tmpRoot, slug);
@@ -112,6 +124,25 @@ test("build PRODUCTION completo e approvato produce pagina indicizzabile: canoni
     assert.ok(html.indexOf('<script type="application/ld+json">') !== -1);
     assert.ok(html.indexOf('"@type":"LocalBusiness"') !== -1);
     assert.ok(html.indexOf("Via Di Prova 1") !== -1);
+  } finally {
+    cleanup(w.tmpRoot, slug);
+  }
+});
+
+test("build PRODUCTION completo per trades-v1 produce pagina indicizzabile: canonical + JSON-LD, zona servita renderizzata, mai un prezzo", function () {
+  var slug = "smoke-prod-e2e-trades";
+  var data = tradesProductionFixture(slug);
+  var w = writeBusiness(slug, data);
+  try {
+    var res = buildMod.buildBusiness(w.businessDir);
+    var html = fs.readFileSync(path.join(ROOT, "dist", res.slug, "index.html"), "utf8");
+    assert.equal(html.indexOf("noindex"), -1);
+    assert.ok(html.indexOf('<link rel="canonical" href="https://example.com/' + slug + '">') !== -1);
+    assert.ok(html.indexOf('<script type="application/ld+json">') !== -1);
+    assert.ok(html.indexOf('"@type":"LocalBusiness"') !== -1);
+    assert.ok(html.indexOf("Via Di Prova 1") !== -1);
+    assert.ok(html.indexOf("Zona di prova") !== -1);
+    assert.equal(html.indexOf("service-card__price"), -1);
   } finally {
     cleanup(w.tmpRoot, slug);
   }

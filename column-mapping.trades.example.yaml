@@ -1,0 +1,26 @@
+# Esempio di mappatura colonne CSV/Excel -> campi di businesses/<slug>/data.yaml
+# per la famiglia trades-v1 (attività di preventivo, non urgenti).
+# Usato da: node scripts/import-csv.js --file <csv> --mapping column-mapping.trades.example.yaml --row N
+#
+# Stessa meccanica di column-mapping.example.yaml (constants/columns): nessuna
+# modifica a scripts/import-csv.js è richiesta per questa famiglia — setPath()
+# supporta già indici di array (business.service_areas[0], services[1].name, ...).
+# Nessuna colonna di prezzo: trades-v1 non mostra mai prezzi (vedi
+# renderAreeDiIntervento in templates/trades-v1/render.js).
+
+constants:
+  category: trades
+  template_id: trades-v1
+  preset_id: default
+  mode: PRIVATE_DEMO
+
+columns:
+  "Nome Attività": business.name
+  "Città": business.address.line
+  "Telefono": business.phone_display
+  "Priorità": priority
+  "Servizio 1 Nome": services[0].name
+  "Servizio 2 Nome": services[1].name
+  "Zona 1": business.service_areas[0]
+  "Zona 2": business.service_areas[1]
+  "Zona 3": business.service_areas[2]

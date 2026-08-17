@@ -63,6 +63,41 @@ test("applyMapping non inventa campi per colonne assenti o vuote", function () {
   assert.equal(data.source_row, 1);
 });
 
+test("la mappatura trades committata (column-mapping.trades.example.yaml) produce uno scaffold della forma corretta, incluso service_areas indicizzato — solo forma, non pronto per la validazione senza intervento umano", function () {
+  var yaml = require("js-yaml");
+  var mappingPath = path.join(path.resolve(__dirname, ".."), "column-mapping.trades.example.yaml");
+  var mapping = yaml.load(fs.readFileSync(mappingPath, "utf8"));
+  var csvText =
+    "Nome Attività,Città,Telefono,Priorità,Servizio 1 Nome,Servizio 2 Nome,Zona 1,Zona 2,Zona 3\n" +
+    "Prova Elettricista,Roma,351 123 4567,alta,Impianti civili,Quadri elettrici,Zona Roma Est,Zona Roma Centro,Comuni limitrofi\n";
+  var rows = importCsv.readRowsAsObjects(csvText);
+  var skeleton = importCsv.buildSkeleton();
+  var data = importCsv.applyMapping(skeleton, mapping, rows[0], { sourceFile: "trades-ci.csv", sourceRow: 1, slug: "prova-elettricista" });
+
+  assert.equal(data.category, "trades");
+  assert.equal(data.template_id, "trades-v1");
+  assert.equal(data.preset_id, "default");
+  assert.equal(data.mode, "PRIVATE_DEMO");
+  assert.equal(data.business.name, "Prova Elettricista");
+  assert.equal(data.business.address.line, "Roma");
+  assert.equal(data.business.phone_display, "351 123 4567");
+  assert.equal(data.priority, "high");
+  assert.equal(data.services[0].name, "Impianti civili");
+  assert.equal(data.services[1].name, "Quadri elettrici");
+  assert.deepEqual(data.business.service_areas, ["Zona Roma Est", "Zona Roma Centro", "Comuni limitrofi"]);
+
+  // Coerente con la mappatura beauty esistente (mai modificata in questa PR):
+  // questo è uno scaffold da rivedere, non una landing pronta al build senza
+  // intervento umano — content_origin/private_demo_status/publication_status
+  // restano il sentinel TODO_COMPLETARE, esattamente come per la mappatura
+  // beauty. La copertura di una pipeline CSV-mode realmente pronta alla
+  // validazione per trades-v1 è dimostrata separatamente da
+  // scripts/ci-integration-check.js, con una mappatura temporanea completa.
+  assert.equal(data.business.content_origin, importCsv.TODO);
+  assert.equal(data.business.private_demo_status, importCsv.TODO);
+  assert.equal(data.business.publication_status, importCsv.TODO);
+});
+
 test("importRow crea lo scaffold e rifiuta la sovrascrittura senza --force", function () {
   var tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "landing-factory-test-"));
   var csvPath = path.join(tmpRoot, "leads.csv");
