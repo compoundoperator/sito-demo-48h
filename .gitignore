@@ -4,6 +4,10 @@ node_modules/
 # output generato (rigenerabile con `npm run build`)
 dist/
 
+# direzioni visive + portale locale (rigenerabili con
+# `npm run build -- businesses/<slug> --variants`): mai pubblicati
+dist-variants/
+
 # QA/screenshot/report generati localmente
 qa-output/
 *.qa-report.json

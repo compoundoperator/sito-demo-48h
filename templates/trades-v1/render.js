@@ -251,7 +251,8 @@ function renderPage(ctx) {
   var whatsappDefaultMessage = (data.business.whatsapp && data.business.whatsapp.default_message) || "";
   var sections = buildSectionList(data);
 
-  var html = shared.renderHead(ctx, { themeColor: "#1d4863" });
+  // ctx.themeColor: theme_color del preset attivo (registry.json), se definito.
+  var html = shared.renderHead(ctx, { themeColor: ctx.themeColor || "#1d4863" });
   html += '  <a class="skip-link" href="#main">Vai al contenuto principale</a>\n';
   html += "  " + renderIconSprite() + "\n";
   html += "  " + shared.renderHeader(data, sections, whatsappDefaultMessage) + "\n";

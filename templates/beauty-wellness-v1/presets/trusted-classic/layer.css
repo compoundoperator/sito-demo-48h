@@ -1,0 +1,195 @@
+/*
+  Layer strutturale del preset "trusted-classic" (beauty-wellness-v1).
+  Concatenato da scripts/build.js DOPO base.css e theme.css: può quindi
+  riassegnare i token strutturali (font, scala tipografica, spaziatura,
+  raggi) e il trattamento di hero, CTA e sezioni. Solo var(--color-*) del
+  preset, mai un colore letterale. Stesso HTML di ogni altra direzione.
+
+  Direzione: rassicurante, ordinata, tradizionale. Gerarchia chiara e
+  composta, scala tipografica moderata, ritmo regolare e compatto, angoli
+  appena smussati, CTA rettangolari, nessun elemento decorativo organico.
+*/
+
+/*
+  Inter dichiarato qui (stesso file locale di base.css): nel CSS concatenato la
+  regola @font-face Inter di base.css viene scartata dal parser, perché il
+  commento di testata di base.css si chiude in anticipo. Difetto preesistente
+  della build standard, lasciato invariato per non alterarne l'output; le
+  direzioni visive lo correggono solo per sé.
+*/
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("../assets/fonts/inter/inter-latin-variable.woff2") format("woff2");
+}
+
+:root {
+  /* Ruoli: Fraunces per i titoli (peso medio), Inter per il testo. */
+  --font-display: "Fraunces", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  --font-body: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+  --fs-h1: clamp(2rem, 1.55rem + 2vw, 3.125rem);
+  --fs-h2: clamp(1.625rem, 1.35rem + 1.2vw, 2.25rem);
+  --fs-h3: clamp(1.125rem, 1.05rem + 0.35vw, 1.3125rem);
+  --fs-lead: clamp(1.0625rem, 1.02rem + 0.2vw, 1.1875rem);
+
+  --section-padding-y: var(--space-7);
+
+  --radius-card: 6px;
+  --radius-pill: 6px;
+  --radius-sm: 4px;
+
+  --shadow-soft: 0 6px 18px -12px rgba(var(--color-shadow-rgb), 0.3);
+  --shadow-lift: 0 10px 24px -14px rgba(var(--color-shadow-rgb), 0.35);
+}
+
+@media (min-width: 768px) {
+  :root {
+    --section-padding-y: 5rem;
+  }
+}
+
+h1,
+h2,
+h3 {
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  line-height: 1.18;
+}
+
+/* ---------- Header ---------- */
+
+.site-header {
+  background: var(--color-bg);
+  box-shadow: 0 1px 0 var(--color-line);
+}
+
+/* Footer su inchiostro: l'accento del marchio passa al tono oro (contrasto AA). */
+.site-footer .wordmark span {
+  color: var(--color-gold);
+}
+
+/* ---------- Hero: sobrio, una sola composizione testo + riquadro ---------- */
+
+.hero__blob,
+.hero__pattern,
+.section-divider {
+  display: none;
+}
+
+.hero {
+  padding-top: var(--space-6);
+  padding-bottom: var(--space-7);
+  border-bottom: 1px solid var(--color-line);
+}
+
+.hero h1 {
+  max-width: 18ch;
+}
+
+.hero__eyebrow {
+  background: transparent;
+  border: 1px solid var(--color-line);
+  color: var(--color-sage-deep);
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+}
+
+.hero__trust {
+  gap: var(--space-6);
+}
+
+.hero__trust-item strong {
+  font-size: 1.375rem;
+  color: var(--color-accent);
+}
+
+.hero__visual {
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius-card);
+  border: 1px solid var(--color-line);
+  box-shadow: none;
+  background: linear-gradient(160deg, var(--color-bg-alt), var(--color-hero-visual-mid));
+}
+
+.hero__visual::before {
+  display: none;
+}
+
+.hero__visual::after {
+  background: radial-gradient(circle at 60% 40%, rgba(var(--color-shadow-rgb), 0.08), transparent 70%);
+}
+
+@media (min-width: 960px) {
+  .hero__grid {
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: var(--space-7);
+  }
+}
+
+/* ---------- CTA: rettangolari, peso pieno, nessun effetto "lift" ---------- */
+
+.btn {
+  letter-spacing: 0.01em;
+  padding: 0.9em 1.5em;
+}
+
+.btn:hover {
+  transform: none;
+}
+
+.btn--primary {
+  box-shadow: none;
+}
+
+.btn--ghost {
+  border-color: var(--color-ink-soft);
+}
+
+/* ---------- Sezioni: intestazioni centrate, ritmo regolare ---------- */
+
+.section-head {
+  margin-inline: auto;
+  text-align: center;
+  margin-bottom: var(--space-6);
+}
+
+.kicker {
+  justify-content: center;
+  font-size: 0.8125rem;
+  letter-spacing: 0.14em;
+}
+
+.kicker::before {
+  display: none;
+}
+
+.service-card {
+  border-top: 3px solid var(--color-accent);
+  gap: var(--space-2);
+}
+
+.service-card:hover {
+  transform: none;
+  border-color: var(--color-line);
+  border-top-color: var(--color-accent);
+}
+
+.service-card__icon {
+  border-radius: var(--radius-sm);
+}
+
+.why-item {
+  padding-block: var(--space-4);
+}
+
+.atmosfera-card {
+  min-height: 210px;
+  padding: var(--space-5) var(--space-4);
+}
+
+.atmosfera-card__blob {
+  display: none;
+}
