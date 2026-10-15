@@ -127,11 +127,12 @@ The screenshots were generated and reviewed by the agent. Human visual review is
   expected to be platform-independent (explicit `\n`, byte-copied
   assets, `/`-normalised paths), but Linux CI was not run because no
   push is authorised.
-- **Pre-existing, not fixed: Inter never loads in standard builds.**
-  - The header comment of `templates/shared/css/base.css` contains `templates/*/presets/*/tokens.css`. The `*/` closes the comment early, so the leftover text turns the `@font-face` Inter rule into an invalid rule that the browser discards.
-  - Standard pages therefore render body text in the system sans-serif.
-  - Fixing `base.css` would change every standard build and the baseline, so it is left for a separate increment. `scripts/variants.test.js` reports it as a diagnostic.
-  - The three directions re-declare the same local Inter font in their `layer.css`.
+- **Fixed in Increment 02** (`docs/increments/INCREMENT-02-inter-font-fix.md`). Original finding: **Inter never loads in standard builds.**
+  - The header comment of `templates/shared/css/base.css` contained a glob path whose `*/` closed the comment early, so the leftover text turned the `@font-face` Inter rule into an invalid rule that the browser discarded.
+  - Standard pages therefore rendered body text in the system sans-serif.
+  - Fixing `base.css` would have changed every standard build and the baseline, so during Increment 01 it was deliberately left for a separate increment. It was fixed in Increment 02, with a new, separately attributed baseline.
+  - During Increment 01, `scripts/variants.test.js` reported it only as a diagnostic. That diagnostic was replaced in Increment 02 by the blocking `scripts/css-integrity.test.js`, which covers every CSS file under `templates/`.
+  - During Increment 01, the three directions re-declared the local Inter font in their `layer.css` as a temporary workaround. Increment 02 removed it; the variants now get Inter from `base.css`.
 - The map placeholder pin and the decorative SVGs keep their hard-coded terracotta/gold colours in every direction. They are shared assets, not themeable yet.
 - `scripts/new-landing.test.js:884` used to fail on macOS only (`/var` vs `/private/var`). It now compares canonical paths (test-only change; no production code changed).
 - Environment: Homebrew `node@22` installed (keg-only). The global `node` was upgraded from 26.7.0 to 26.11.1, because the `node@22` install upgraded the shared `simdjson`. Homebrew developer mode was switched back off.

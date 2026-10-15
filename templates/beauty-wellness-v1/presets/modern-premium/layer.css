@@ -10,15 +10,6 @@
   senza bordi né raggi, hero asimmetrico con immagine a tutta altezza.
 */
 
-/* Inter: vedi la nota in trusted-classic/layer.css (difetto preesistente di base.css). */
-@font-face {
-  font-family: "Inter";
-  font-style: normal;
-  font-weight: 400 700;
-  font-display: swap;
-  src: url("../assets/fonts/inter/inter-latin-variable.woff2") format("woff2");
-}
-
 :root {
   /* Ruoli: Fraunces leggero per il display, Inter per testo ed etichette. */
   --font-display: "Fraunces", "Iowan Old Style", "Palatino Linotype", Georgia, serif;

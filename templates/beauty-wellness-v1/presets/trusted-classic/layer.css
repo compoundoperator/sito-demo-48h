@@ -10,21 +10,6 @@
   appena smussati, CTA rettangolari, nessun elemento decorativo organico.
 */
 
-/*
-  Inter dichiarato qui (stesso file locale di base.css): nel CSS concatenato la
-  regola @font-face Inter di base.css viene scartata dal parser, perché il
-  commento di testata di base.css si chiude in anticipo. Difetto preesistente
-  della build standard, lasciato invariato per non alterarne l'output; le
-  direzioni visive lo correggono solo per sé.
-*/
-@font-face {
-  font-family: "Inter";
-  font-style: normal;
-  font-weight: 400 700;
-  font-display: swap;
-  src: url("../assets/fonts/inter/inter-latin-variable.woff2") format("woff2");
-}
-
 :root {
   /* Ruoli: Fraunces per i titoli (peso medio), Inter per il testo. */
   --font-display: "Fraunces", "Iowan Old Style", "Palatino Linotype", Georgia, serif;

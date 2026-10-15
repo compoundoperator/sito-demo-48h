@@ -25,7 +25,10 @@ var qaMod = require("./qa-screenshots.js");
 var registry = require("../templates/registry.json");
 
 var ROOT = path.resolve(__dirname, "..");
-var BASELINE = require("../fixtures/baselines/standard-build-01b251e.json");
+// Baseline storica (codice 01b251e, mai rigenerata) e baseline corrente (INCREMENT-02:
+// stesso output tranne css/style.css, dopo la correzione del commento di base.css).
+var BASELINE_01B251E = require("../fixtures/baselines/standard-build-01b251e.json");
+var BASELINE = require("../fixtures/baselines/standard-build-inc02.json");
 var BW = "beauty-wellness-v1";
 var DIRECTIONS = ["trusted-classic", "modern-premium", "distinctive-bold"];
 
@@ -303,10 +306,26 @@ test("theme_color di ogni direzione coincide con un token del proprio preset", f
   }, {}));
 });
 
-// ---------- 4. build standard invariata rispetto alla baseline 01b251e ----------
+// ---------- 4. build standard: baseline corrente + delta esatto rispetto a 01b251e ----------
 
-test("build standard: output identico byte per byte alla baseline generata dal codice 01b251e", function () {
-  assert.equal(BASELINE.commit, "01b251e94001aa832ff1814af3fb9d05c5d31fcf");
+var EXPECTED_DELTA = ["impianti-elettrici-demo-alfa", "luce-beauty-studio", "minimal-beauty-demo", "minimal-trades-demo"]
+  .map(function (b) { return b + "/css/style.css"; });
+
+test("baseline INCREMENT-02: differisce da quella 01b251e esattamente nei 4 css/style.css", function () {
+  assert.equal(BASELINE_01B251E.commit, "01b251e94001aa832ff1814af3fb9d05c5d31fcf");
+  assert.equal(BASELINE.derived_from, "standard-build-01b251e.json");
+  assert.deepEqual(BASELINE.expected_delta.slice().sort(), EXPECTED_DELTA.slice().sort());
+  assert.deepEqual(Object.keys(BASELINE.businesses).sort(), Object.keys(BASELINE_01B251E.businesses).sort());
+  var actualDelta = [];
+  Object.keys(BASELINE.businesses).forEach(function (b) {
+    var now = BASELINE.businesses[b], old = BASELINE_01B251E.businesses[b];
+    assert.deepEqual(Object.keys(now).sort(), Object.keys(old).sort(), b + ": stesso insieme di file");
+    Object.keys(now).forEach(function (f) { if (now[f] !== old[f]) actualDelta.push(b + "/" + f); });
+  });
+  assert.deepEqual(actualDelta.sort(), EXPECTED_DELTA.slice().sort());
+});
+
+test("build standard: output identico byte per byte alla baseline corrente (INCREMENT-02)", function () {
   var names = Object.keys(BASELINE.businesses);
   assert.deepEqual(names.slice().sort(), fs.readdirSync(path.join(ROOT, "businesses")).filter(function (n) {
     return fs.statSync(path.join(ROOT, "businesses", n)).isDirectory();
@@ -403,52 +422,21 @@ test("le tre direzioni differiscono per tipografia, spaziatura, CTA, hero e sezi
   var displayFonts = DIRECTIONS.map(function (id) { return typography[id][0]; });
   assert.ok(displayFonts.indexOf('"Inter"') !== -1 && displayFonts.indexOf('"Fraunces"') !== -1, displayFonts.join(","));
 
-  // Nessun colore letterale nei layer: solo var(--color-*) del preset. L'unica url()
-  // ammessa è il file font locale già incluso nell'output (Inter, vedi layer.css).
-  var LOCAL_INTER = 'url("../assets/fonts/inter/inter-latin-variable.woff2")';
+  // Nessun colore letterale né risorsa esterna nei layer: solo var(--color-*) del preset.
+  // (Inter arriva da base.css: nessun layer dichiara font propri.)
   DIRECTIONS.forEach(function (id) {
     var css = fs.readFileSync(presetFile(id, "layer.css"), "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
     assert.equal(/#[0-9a-fA-F]{3,8}\b|rgba?\(\s*\d/.test(css), false, id + " contiene un colore letterale");
-    var withoutLocalFont = css.split(LOCAL_INTER).join("");
-    assert.equal(/@import|url\(|https?:/i.test(withoutLocalFont), false, id + " riferisce una risorsa non locale");
+    assert.equal(/@import|@font-face|url\(|https?:/i.test(css), false, id + " riferisce una risorsa o un font propri");
   });
 });
 
-/**
- * Preludi (selettori / at-rule) di un file CSS dopo la rimozione dei commenti.
- * Un commento chiuso in anticipo (es. "presets/*" + "/tokens.css" dentro il
- * commento) lascia testo libero che diventa parte del preludio della regola
- * successiva: il browser scarta quella regola. Un preludio legittimo nei nostri
- * file non contiene mai "/" né parole separate da punteggiatura testuale.
- */
-function suspiciousPreludes(file) {
-  var css = fs.readFileSync(file, "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
-  var bad = [];
-  var re = /([^{}]*)\{/g;
-  var m;
-  while ((m = re.exec(css))) {
-    var prelude = m[1].trim();
-    if (!prelude) continue;
-    var strayBeforeAtRule = prelude.indexOf("@") > 0; // es. "presets @font-face": regola scartata
-    if (strayBeforeAtRule || /[\/;]|[—–]|\.\s|\s(il|la|di|che|per|non|solo|mai|sono|questo|file)\s/i.test(prelude)) {
-      bad.push(prelude.replace(/\s+/g, " ").slice(0, 80));
-    }
-  }
-  return bad;
-}
-
-test("CSS dei preset: nessun commento chiuso in anticipo (regole scartate dal parser)", function (t) {
+// L'integrità dei commenti di TUTTI i CSS (condivisi, famiglie, preset) è bloccante in
+// scripts/css-integrity.test.js; qui resta solo il vincolo di forma dei tokens delle direzioni.
+test("tokens.css delle direzioni: un solo blocco :root dopo la rimozione dei commenti", function () {
   DIRECTIONS.forEach(function (id) {
-    ["tokens.css", "layer.css"].forEach(function (name) {
-      assert.deepEqual(suspiciousPreludes(presetFile(id, name)), [], id + "/" + name);
-    });
     var tokens = fs.readFileSync(presetFile(id, "tokens.css"), "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
     assert.match(tokens, /^\s*:root\s*\{[^{}]*\}\s*$/, id + "/tokens.css deve contenere solo un blocco :root");
-  });
-  // File condivisi preesistenti: solo misurati e riportati (mai modificati qui).
-  ["templates/shared/css/base.css", "templates/beauty-wellness-v1/css/theme.css"].forEach(function (rel) {
-    var bad = suspiciousPreludes(path.join(ROOT, rel));
-    t.diagnostic(rel + ": " + (bad.length ? "preludi sospetti (regola scartata): " + bad.join(" | ") : "nessun preludio sospetto"));
   });
 });
 

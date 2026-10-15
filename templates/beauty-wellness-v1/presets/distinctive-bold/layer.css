@@ -10,15 +10,6 @@
   raggio, etichette come blocchi pieni, banda scura per "Perché noi".
 */
 
-/* Inter: vedi la nota in trusted-classic/layer.css (difetto preesistente di base.css). */
-@font-face {
-  font-family: "Inter";
-  font-style: normal;
-  font-weight: 400 700;
-  font-display: swap;
-  src: url("../assets/fonts/inter/inter-latin-variable.woff2") format("woff2");
-}
-
 :root {
   /* Ruoli invertiti: Inter per il display, Fraunces come voce d'accento. */
   --font-display: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
