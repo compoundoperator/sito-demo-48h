@@ -25,10 +25,12 @@ var qaMod = require("./qa-screenshots.js");
 var registry = require("../templates/registry.json");
 
 var ROOT = path.resolve(__dirname, "..");
-// Baseline storica (codice 01b251e, mai rigenerata) e baseline corrente (INCREMENT-02:
-// stesso output tranne css/style.css, dopo la correzione del commento di base.css).
+// Baseline storiche, mai rigenerate: 01b251e (codice originale) e INCREMENT-02 (commento di
+// base.css corretto). Baseline corrente: INCREMENT-03 (layer "default" solo colore per il
+// contrasto del marchio). Ognuna differisce dalla precedente solo nei 4 css/style.css.
 var BASELINE_01B251E = require("../fixtures/baselines/standard-build-01b251e.json");
-var BASELINE = require("../fixtures/baselines/standard-build-inc02.json");
+var BASELINE_INC02 = require("../fixtures/baselines/standard-build-inc02.json");
+var BASELINE = require("../fixtures/baselines/standard-build-inc03.json");
 var BW = "beauty-wellness-v1";
 var DIRECTIONS = ["trusted-classic", "modern-premium", "distinctive-bold"];
 
@@ -218,9 +220,35 @@ test("registry: ogni variante è un preset registrato, con tokens.css, layer.css
     assert.match(entry.preset_meta[id].theme_color, /^#[0-9a-f]{6}$/);
     assert.ok(entry.preset_meta[id].label && entry.preset_meta[id].summary, id + " label/summary");
   });
-  // "default" resta senza layer: output storico invariato.
-  assert.equal(fs.existsSync(presetFile("default", "layer.css")), false);
-  assert.equal(buildMod.resolveTemplate(BW, "default").layerPath, null);
+  // "default" ha un layer (INCREMENT-03), ma solo-colore: vedi il test dedicato più sotto.
+  assert.equal(buildMod.resolveTemplate(BW, "default").layerPath, presetFile("default", "layer.css"));
+});
+
+test("layer dei preset default: solo dichiarazioni color, e accento del marchio >= 4.5:1 su header e footer", function () {
+  Object.keys(registry).forEach(function (templateId) {
+    var dir = path.join(ROOT, "templates", templateId, "presets", "default");
+    var layerFile = path.join(dir, "layer.css");
+    assert.ok(fs.existsSync(layerFile), templateId + ": default/layer.css mancante");
+    var rules = cssRules(layerFile);
+    Object.keys(rules).forEach(function (selector) {
+      Object.keys(rules[selector]).forEach(function (prop) {
+        assert.equal(prop, "color", templateId + ": " + selector + " dichiara " + prop + " (ammesso solo color: nessun layout)");
+      });
+    });
+    var tokens = readTokens(path.join(dir, "tokens.css"));
+    function tokenOf(value) {
+      var m = /^var\((--[a-z0-9-]+)\)$/.exec(String(value || "").trim());
+      assert.ok(m, templateId + ": colore non espresso come var(--token): " + value);
+      return tokens[m[1]];
+    }
+    // Senza regola nel layer vale base.css: .wordmark span { color: var(--color-accent-base) }.
+    var header = tokenOf((rules[".wordmark span"] || {}).color || "var(--color-accent-base)");
+    var footer = tokenOf((rules[".site-footer .wordmark span"] || {}).color || "var(--color-accent-base)");
+    var onBg = contrast(header, tokens["--color-bg"]);
+    var onInk = contrast(footer, tokens["--color-ink"]);
+    assert.ok(onBg >= 4.5, templateId + ": accento marchio nell'header " + onBg.toFixed(2) + ":1");
+    assert.ok(onInk >= 4.5, templateId + ": accento marchio nel footer " + onInk.toFixed(2) + ":1");
+  });
 });
 
 // ---------- 2 + 3 + 7 + 9. output isolati, determinismo, theme-color, noindex, portale ----------
@@ -311,21 +339,30 @@ test("theme_color di ogni direzione coincide con un token del proprio preset", f
 var EXPECTED_DELTA = ["impianti-elettrici-demo-alfa", "luce-beauty-studio", "minimal-beauty-demo", "minimal-trades-demo"]
   .map(function (b) { return b + "/css/style.css"; });
 
-test("baseline INCREMENT-02: differisce da quella 01b251e esattamente nei 4 css/style.css", function () {
-  assert.equal(BASELINE_01B251E.commit, "01b251e94001aa832ff1814af3fb9d05c5d31fcf");
-  assert.equal(BASELINE.derived_from, "standard-build-01b251e.json");
-  assert.deepEqual(BASELINE.expected_delta.slice().sort(), EXPECTED_DELTA.slice().sort());
-  assert.deepEqual(Object.keys(BASELINE.businesses).sort(), Object.keys(BASELINE_01B251E.businesses).sort());
+function assertExactDelta(next, prev, label) {
+  assert.deepEqual(next.expected_delta.slice().sort(), EXPECTED_DELTA.slice().sort(), label + ": expected_delta");
+  assert.deepEqual(Object.keys(next.businesses).sort(), Object.keys(prev.businesses).sort(), label + ": stesse attività");
   var actualDelta = [];
-  Object.keys(BASELINE.businesses).forEach(function (b) {
-    var now = BASELINE.businesses[b], old = BASELINE_01B251E.businesses[b];
-    assert.deepEqual(Object.keys(now).sort(), Object.keys(old).sort(), b + ": stesso insieme di file");
+  Object.keys(next.businesses).forEach(function (b) {
+    var now = next.businesses[b], old = prev.businesses[b];
+    assert.deepEqual(Object.keys(now).sort(), Object.keys(old).sort(), label + " " + b + ": stesso insieme di file");
     Object.keys(now).forEach(function (f) { if (now[f] !== old[f]) actualDelta.push(b + "/" + f); });
   });
-  assert.deepEqual(actualDelta.sort(), EXPECTED_DELTA.slice().sort());
+  assert.deepEqual(actualDelta.sort(), EXPECTED_DELTA.slice().sort(), label + ": file cambiati");
+}
+
+test("baseline INCREMENT-02: differisce da quella 01b251e esattamente nei 4 css/style.css", function () {
+  assert.equal(BASELINE_01B251E.commit, "01b251e94001aa832ff1814af3fb9d05c5d31fcf");
+  assert.equal(BASELINE_INC02.derived_from, "standard-build-01b251e.json");
+  assertExactDelta(BASELINE_INC02, BASELINE_01B251E, "inc02 vs 01b251e");
 });
 
-test("build standard: output identico byte per byte alla baseline corrente (INCREMENT-02)", function () {
+test("baseline INCREMENT-03: differisce da quella INCREMENT-02 esattamente nei 4 css/style.css", function () {
+  assert.equal(BASELINE.derived_from, "standard-build-inc02.json");
+  assertExactDelta(BASELINE, BASELINE_INC02, "inc03 vs inc02");
+});
+
+test("build standard: output identico byte per byte alla baseline corrente (INCREMENT-03)", function () {
   var names = Object.keys(BASELINE.businesses);
   assert.deepEqual(names.slice().sort(), fs.readdirSync(path.join(ROOT, "businesses")).filter(function (n) {
     return fs.statSync(path.join(ROOT, "businesses", n)).isDirectory();

@@ -1,0 +1,13 @@
+/*
+  Layer del preset "default" (beauty-wellness-v1) — solo colore, nessun layout.
+  Corregge il contrasto del marchio (INCREMENT-03): l'accento del wordmark in
+  --color-accent-base non raggiungeva 4.5:1 né su --color-bg né sul footer.
+*/
+
+.wordmark span {
+  color: var(--color-accent);
+}
+
+.site-footer .wordmark span {
+  color: var(--color-gold);
+}
