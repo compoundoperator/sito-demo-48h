@@ -262,3 +262,14 @@ h3 {
 .form-field textarea {
   border: 2px solid var(--color-ink);
 }
+
+/* Schede "atmosfera" (INCREMENT-04): testo pieno senza trasparenza, solo colore. */
+
+.atmosfera-card h3,
+.atmosfera-card p {
+  color: var(--color-surface);
+}
+
+.atmosfera-card p {
+  opacity: 1;
+}

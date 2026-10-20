@@ -99,7 +99,7 @@ Screenshots for human review (local, gitignored): `qa-output/inc03/{before,after
 
 ## Limits
 
-- **Text over gradients is not certified.** The rendered sweep cannot compute contrast for text drawn over a gradient: the atmosphere cards and the hero visual label. Those elements are listed in the Verification section and are never counted as passed.
+- **Addressed in Increment 04** (`docs/increments/INCREMENT-04-atmosphere-text-contrast.md`): the atmosphere text is now measured in the worst case (every gradient stop plus every real pixel) and fixed in the default theme and the three directions. Original note: **Text over gradients is not certified.** The rendered sweep cannot compute contrast for text drawn over a gradient: the atmosphere cards and the hero visual label. Those elements are listed in the Verification section and are never counted as passed.
   - At token level, the atmosphere-card pairs of the beauty `default` preset are still below 4.5:1 (3.77, 3.87, 3.36, reported since Increment 01). They are not fixed here.
 - macOS only; Linux CI was not run, because no push is authorised.
 

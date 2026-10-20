@@ -25,12 +25,14 @@ var qaMod = require("./qa-screenshots.js");
 var registry = require("../templates/registry.json");
 
 var ROOT = path.resolve(__dirname, "..");
-// Baseline storiche, mai rigenerate: 01b251e (codice originale) e INCREMENT-02 (commento di
-// base.css corretto). Baseline corrente: INCREMENT-03 (layer "default" solo colore per il
-// contrasto del marchio). Ognuna differisce dalla precedente solo nei 4 css/style.css.
+// Baseline storiche, mai rigenerate: 01b251e (codice originale), INCREMENT-02 (commento di
+// base.css corretto), INCREMENT-03 (layer "default" solo colore per il contrasto del marchio).
+// Baseline corrente: INCREMENT-04 (testo delle schede atmosfera, solo colore). Ognuna
+// differisce dalla precedente solo in un insieme dichiarato di css/style.css.
 var BASELINE_01B251E = require("../fixtures/baselines/standard-build-01b251e.json");
 var BASELINE_INC02 = require("../fixtures/baselines/standard-build-inc02.json");
-var BASELINE = require("../fixtures/baselines/standard-build-inc03.json");
+var BASELINE_INC03 = require("../fixtures/baselines/standard-build-inc03.json");
+var BASELINE = require("../fixtures/baselines/standard-build-inc04.json");
 var BW = "beauty-wellness-v1";
 var DIRECTIONS = ["trusted-classic", "modern-premium", "distinctive-bold"];
 
@@ -224,7 +226,17 @@ test("registry: ogni variante è un preset registrato, con tokens.css, layer.css
   assert.equal(buildMod.resolveTemplate(BW, "default").layerPath, presetFile("default", "layer.css"));
 });
 
-test("layer dei preset default: solo dichiarazioni color, e accento del marchio >= 4.5:1 su header e footer", function () {
+// Proprietà ammesse nei layer "default": solo colore. Oltre a `color`, le sole eccezioni
+// (INCREMENT-04, schede atmosfera) sono --tone-a/--tone-b, che alimentano solo i colori della
+// sfumatura, e `opacity: 1` sul paragrafo, che elimina solo la trasparenza del testo.
+function allowedDefaultDeclaration(selector, prop, value) {
+  if (prop === "color") return true;
+  if ((prop === "--tone-a" || prop === "--tone-b") && /^\.atmosfera-card(:nth-child\([23]\))?$/.test(selector)) return true;
+  if (prop === "opacity" && selector === ".atmosfera-card p" && value === "1") return true;
+  return false;
+}
+
+test("layer dei preset default: solo dichiarazioni di colore, e accento del marchio >= 4.5:1 su header e footer", function () {
   Object.keys(registry).forEach(function (templateId) {
     var dir = path.join(ROOT, "templates", templateId, "presets", "default");
     var layerFile = path.join(dir, "layer.css");
@@ -232,7 +244,8 @@ test("layer dei preset default: solo dichiarazioni color, e accento del marchio 
     var rules = cssRules(layerFile);
     Object.keys(rules).forEach(function (selector) {
       Object.keys(rules[selector]).forEach(function (prop) {
-        assert.equal(prop, "color", templateId + ": " + selector + " dichiara " + prop + " (ammesso solo color: nessun layout)");
+        assert.ok(allowedDefaultDeclaration(selector, prop, rules[selector][prop]),
+          templateId + ": " + selector + " dichiara " + prop + ": " + rules[selector][prop] + " (ammesse solo dichiarazioni di colore: nessun layout)");
       });
     });
     var tokens = readTokens(path.join(dir, "tokens.css"));
@@ -248,6 +261,48 @@ test("layer dei preset default: solo dichiarazioni color, e accento del marchio 
     var onInk = contrast(footer, tokens["--color-ink"]);
     assert.ok(onBg >= 4.5, templateId + ": accento marchio nell'header " + onBg.toFixed(2) + ":1");
     assert.ok(onInk >= 4.5, templateId + ": accento marchio nel footer " + onInk.toFixed(2) + ":1");
+  });
+});
+
+// Schede "atmosfera" (INCREMENT-04): per default e per le tre direzioni, il testo (con la sua
+// opacità) deve raggiungere 4.5:1 contro OGNI colore della sfumatura, composto all'opacità del
+// ::before (0.94) su --color-bg. Il blob bianco del default è coperto dalla misura a pixel reali.
+function blendHex(topHex, alpha, bottomHex) {
+  function rgb(h) { h = h.replace("#", ""); return [0, 2, 4].map(function (i) { return parseInt(h.slice(i, i + 2), 16); }); }
+  var t = rgb(topHex), b = rgb(bottomHex);
+  return "#" + t.map(function (c, i) {
+    return ("0" + Math.round(c * alpha + b[i] * (1 - alpha)).toString(16)).slice(-2);
+  }).join("");
+}
+
+test("schede atmosfera: testo >= 4.5:1 su ogni colore della sfumatura, per default e per le tre direzioni", function () {
+  var THEME = [
+    ["--color-terracotta", "--color-terracotta-deep"],
+    ["--color-atmosfera-tone2-a", "--color-atmosfera-tone2-b"],
+    ["--color-sage", "--color-atmosfera-tone3-b"]
+  ];
+  ["default"].concat(DIRECTIONS).forEach(function (id) {
+    var tokens = readTokens(presetFile(id, "tokens.css"));
+    var rules = cssRules(presetFile(id, "layer.css"));
+    function tok(value, fallback) {
+      var m = /^var\((--[a-z0-9-]+)\)$/.exec(String(value || "").trim());
+      return tokens[m ? m[1] : fallback];
+    }
+    var text = tok((rules[".atmosfera-card h3, .atmosfera-card p"] || {}).color, "--color-bg");
+    var pOpacity = parseFloat((rules[".atmosfera-card p"] || {}).opacity || "0.92");
+    var bg = tokens["--color-bg"];
+    THEME.forEach(function (def, i) {
+      // Card 1: layer :nth-child(1) > layer .atmosfera-card > tema; card 2/3: layer :nth-child(n) > tema
+      // (il tema usa :nth-child(n), più specifico del .atmosfera-card del layer).
+      var r = rules[".atmosfera-card:nth-child(" + (i + 1) + ")"] || (i === 0 ? rules[".atmosfera-card"] : null) || {};
+      [tok(r["--tone-a"], def[0]), tok(r["--tone-b"], def[1])].forEach(function (stop, j) {
+        var surface = blendHex(stop, 0.94, bg);
+        var h3 = contrast(text, surface);
+        var p = contrast(blendHex(text, pOpacity, surface), surface);
+        assert.ok(h3 >= 4.5, id + " scheda " + (i + 1) + " stop " + (j + 1) + ": titolo " + h3.toFixed(2) + ":1");
+        assert.ok(p >= 4.5, id + " scheda " + (i + 1) + " stop " + (j + 1) + ": paragrafo " + p.toFixed(2) + ":1");
+      });
+    });
   });
 });
 
@@ -339,8 +394,9 @@ test("theme_color di ogni direzione coincide con un token del proprio preset", f
 var EXPECTED_DELTA = ["impianti-elettrici-demo-alfa", "luce-beauty-studio", "minimal-beauty-demo", "minimal-trades-demo"]
   .map(function (b) { return b + "/css/style.css"; });
 
-function assertExactDelta(next, prev, label) {
-  assert.deepEqual(next.expected_delta.slice().sort(), EXPECTED_DELTA.slice().sort(), label + ": expected_delta");
+function assertExactDelta(next, prev, label, expectedDelta) {
+  expectedDelta = expectedDelta || EXPECTED_DELTA;
+  assert.deepEqual(next.expected_delta.slice().sort(), expectedDelta.slice().sort(), label + ": expected_delta");
   assert.deepEqual(Object.keys(next.businesses).sort(), Object.keys(prev.businesses).sort(), label + ": stesse attività");
   var actualDelta = [];
   Object.keys(next.businesses).forEach(function (b) {
@@ -348,7 +404,7 @@ function assertExactDelta(next, prev, label) {
     assert.deepEqual(Object.keys(now).sort(), Object.keys(old).sort(), label + " " + b + ": stesso insieme di file");
     Object.keys(now).forEach(function (f) { if (now[f] !== old[f]) actualDelta.push(b + "/" + f); });
   });
-  assert.deepEqual(actualDelta.sort(), EXPECTED_DELTA.slice().sort(), label + ": file cambiati");
+  assert.deepEqual(actualDelta.sort(), expectedDelta.slice().sort(), label + ": file cambiati");
 }
 
 test("baseline INCREMENT-02: differisce da quella 01b251e esattamente nei 4 css/style.css", function () {
@@ -358,11 +414,17 @@ test("baseline INCREMENT-02: differisce da quella 01b251e esattamente nei 4 css/
 });
 
 test("baseline INCREMENT-03: differisce da quella INCREMENT-02 esattamente nei 4 css/style.css", function () {
-  assert.equal(BASELINE.derived_from, "standard-build-inc02.json");
-  assertExactDelta(BASELINE, BASELINE_INC02, "inc03 vs inc02");
+  assert.equal(BASELINE_INC03.derived_from, "standard-build-inc02.json");
+  assertExactDelta(BASELINE_INC03, BASELINE_INC02, "inc03 vs inc02");
 });
 
-test("build standard: output identico byte per byte alla baseline corrente (INCREMENT-03)", function () {
+test("baseline INCREMENT-04: differisce da quella INCREMENT-03 solo nei 2 css/style.css beauty", function () {
+  assert.equal(BASELINE.derived_from, "standard-build-inc03.json");
+  assertExactDelta(BASELINE, BASELINE_INC03, "inc04 vs inc03",
+    ["luce-beauty-studio/css/style.css", "minimal-beauty-demo/css/style.css"]);
+});
+
+test("build standard: output identico byte per byte alla baseline corrente (INCREMENT-04)", function () {
   var names = Object.keys(BASELINE.businesses);
   assert.deepEqual(names.slice().sort(), fs.readdirSync(path.join(ROOT, "businesses")).filter(function (n) {
     return fs.statSync(path.join(ROOT, "businesses", n)).isDirectory();
