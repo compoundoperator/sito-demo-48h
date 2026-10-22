@@ -6,7 +6,25 @@
       "templates/beauty-wellness-v1/css/theme.css"
     ],
     "js": ["templates/shared/js/base.js"],
-    "presets": ["default"]
+    "presets": ["default", "trusted-classic", "modern-premium", "distinctive-bold"],
+    "variants": ["trusted-classic", "modern-premium", "distinctive-bold"],
+    "preset_meta": {
+      "trusted-classic": {
+        "label": "Trusted Classic",
+        "summary": "Rassicurante, ordinata e tradizionale: titoli Fraunces di peso medio su scala moderata, testo Inter, ritmo compatto e regolare, intestazioni centrate, CTA rettangolari, schede con filetto superiore, palette blu notte e crema usata con sobrietà.",
+        "theme_color": "#22496a"
+      },
+      "modern-premium": {
+        "label": "Modern Premium",
+        "summary": "Spazio ampio e ritmo editoriale: titoli Fraunces leggeri e molto grandi con tracking stretto, etichette Inter maiuscole spaziate, CTA a pillola in inchiostro pieno, schede senza bordi né raggi, hero asimmetrico; neutri caldi con bronzo profondo.",
+        "theme_color": "#171513"
+      },
+      "distinctive-bold": {
+        "label": "Distinctive Bold",
+        "summary": "Energica e memorabile: ruoli tipografici invertiti (Inter 700 per i titoli, Fraunces per cifre e citazioni), titolo hero dominante, bordi spessi e ombre piene sfalsate, nessun raggio, etichette a blocco pieno, banda scura per i punti di forza; prugna, magenta e ambra con contrasti accessibili.",
+        "theme_color": "#c2185b"
+      }
+    }
   },
   "trades-v1": {
     "render": "templates/trades-v1/render.js",

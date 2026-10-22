@@ -306,7 +306,8 @@ function renderPage(ctx) {
   var sections = buildSectionList(data);
   var photoUrlById = ctx.photoUrlById || {};
 
-  var html = shared.renderHead(ctx, { themeColor: "#C1653A" });
+  // ctx.themeColor: theme_color del preset attivo (registry.json), se definito.
+  var html = shared.renderHead(ctx, { themeColor: ctx.themeColor || "#C1653A" });
   html += '  <a class="skip-link" href="#main">Vai al contenuto principale</a>\n';
   html += "  " + renderIconSprite() + "\n";
   html += "  " + shared.renderHeader(data, sections, whatsappDefaultMessage) + "\n";

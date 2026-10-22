@@ -1,0 +1,48 @@
+/*
+  Preset "distinctive-bold" per beauty-wellness-v1 — palette "Prugna,
+  Magenta & Ambra": energica e memorabile, contrasti forti ma sempre
+  accessibili. Stessi nomi di variabile del preset "default" (ruoli storici
+  della famiglia, non descrizioni del colore).
+*/
+
+:root {
+  --color-bg: #fff7ef;
+  --color-bg-alt: #ffe9d9;
+  --color-surface: #ffffff;
+  --color-ink: #1e0b2b;
+  --color-ink-soft: #4a3858;
+  --color-terracotta: #c2185b;
+  --color-terracotta-deep: #9c1149;
+  --color-terracotta-darkest: #750c37;
+  --color-sage: #0f766e;
+  --color-sage-deep: #0b5c55;
+  --color-sage-tint: rgba(15, 118, 110, 0.12);
+  --color-gold: #ffb627;
+  --color-gold-deep: #7a4f00;
+  --color-line: #e9cdbb;
+  --color-whatsapp: #25d366;
+  --color-whatsapp-deep: #1da851;
+
+  --color-on-terracotta: #ffffff;
+
+  --color-accent: var(--color-terracotta-deep);
+  --color-on-accent: var(--color-on-terracotta);
+  --color-accent-strong: var(--color-terracotta-darkest);
+  --color-accent-base: var(--color-terracotta);
+
+  /* Componenti RGB di --color-ink (#1e0b2b). */
+  --color-shadow-rgb: 30, 11, 43;
+
+  --color-header-scrolled-bg: rgba(255, 247, 239, 0.94);
+  --color-bg-translucent: rgba(255, 247, 239, 0.92);
+  --color-hero-visual-mid: #ffd3b8;
+
+  --color-atmosfera-tone2-a: #5b2a86;
+  --color-atmosfera-tone2-b: #3b1658;
+  --color-atmosfera-tone3-b: #0b5c55;
+
+  --color-footer-text: rgba(255, 247, 239, 0.86);
+  --color-footer-text-soft: rgba(255, 247, 239, 0.72);
+  --color-footer-text-dim: rgba(255, 247, 239, 0.64);
+  --color-footer-border: rgba(255, 247, 239, 0.16);
+}

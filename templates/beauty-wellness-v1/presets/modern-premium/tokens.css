@@ -1,0 +1,48 @@
+/*
+  Preset "modern-premium" per beauty-wellness-v1 — palette "Inchiostro &
+  Bronzo": neutri caldi, quasi-nero e un bronzo profondo usato con
+  parsimonia. Stessi nomi di variabile del preset "default" (ruoli storici
+  della famiglia, non descrizioni del colore).
+*/
+
+:root {
+  --color-bg: #f5f2ed;
+  --color-bg-alt: #e9e3da;
+  --color-surface: #fbf9f6;
+  --color-ink: #171513;
+  --color-ink-soft: #514a44;
+  --color-terracotta: #86634a;
+  --color-terracotta-deep: #6e4f37;
+  --color-terracotta-darkest: #523a28;
+  --color-sage: #6b685f;
+  --color-sage-deep: #57544b;
+  --color-sage-tint: rgba(107, 104, 95, 0.12);
+  --color-gold: #c9ad80;
+  --color-gold-deep: #6b5634;
+  --color-line: #d8cfc3;
+  --color-whatsapp: #25d366;
+  --color-whatsapp-deep: #1da851;
+
+  --color-on-terracotta: #fbf9f6;
+
+  --color-accent: var(--color-terracotta-deep);
+  --color-on-accent: var(--color-on-terracotta);
+  --color-accent-strong: var(--color-terracotta-darkest);
+  --color-accent-base: var(--color-terracotta);
+
+  /* Componenti RGB di --color-ink (#171513). */
+  --color-shadow-rgb: 23, 21, 19;
+
+  --color-header-scrolled-bg: rgba(245, 242, 237, 0.9);
+  --color-bg-translucent: rgba(245, 242, 237, 0.9);
+  --color-hero-visual-mid: #d9cfc2;
+
+  --color-atmosfera-tone2-a: #6f6a62;
+  --color-atmosfera-tone2-b: #3d3934;
+  --color-atmosfera-tone3-b: #45423b;
+
+  --color-footer-text: rgba(245, 242, 237, 0.84);
+  --color-footer-text-soft: rgba(245, 242, 237, 0.7);
+  --color-footer-text-dim: rgba(245, 242, 237, 0.62);
+  --color-footer-border: rgba(245, 242, 237, 0.14);
+}

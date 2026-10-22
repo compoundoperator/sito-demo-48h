@@ -245,6 +245,31 @@ function runStaticChecks(distDir, businessDir) {
   return problems;
 }
 
+/**
+ * Decide la cartella attività (per il controllo di fuga di dati interni) e
+ * la cartella di output predefinita per un target QA.
+ *  - Build standard (qualunque percorso fuori da dist-variants/): invariato,
+ *    businesses/<basename> e qa-output/<basename>.
+ *  - Solo sotto <ROOT>/dist-variants/: <slug>/<preset> (variante) o <slug>
+ *    (portale) -> businesses/<slug> e qa-output/variants/<slug>/<preset|portal>.
+ */
+function resolveQaTarget(distDir) {
+  var abs = path.resolve(distDir);
+  var variantsRoot = path.join(ROOT, "dist-variants");
+  var rel = path.relative(variantsRoot, abs);
+  var parts = rel.split(path.sep);
+  var underVariants = rel !== "" && !path.isAbsolute(rel) && parts[0] !== ".." && (parts.length === 1 || parts.length === 2);
+  if (underVariants) {
+    var slug = parts[0];
+    return {
+      businessDir: path.join(ROOT, "businesses", slug),
+      outDir: path.join(ROOT, "qa-output", "variants", slug, parts.length === 2 ? parts[1] : "portal")
+    };
+  }
+  var base = path.basename(abs);
+  return { businessDir: path.join(ROOT, "businesses", base), outDir: path.join(ROOT, "qa-output", base) };
+}
+
 async function run(distDir, outDir) {
   var { chromium } = require("playwright");
   var indexPath = path.join(distDir, "index.html");
@@ -267,8 +292,7 @@ async function run(distDir, outDir) {
 
   var report = { distDir: distDir, breakpoints: {}, staticChecks: {} };
 
-  var slug = path.basename(distDir);
-  var businessDir = path.join(ROOT, "businesses", slug);
+  var businessDir = resolveQaTarget(distDir).businessDir;
   report.staticChecks.unresolvedPlaceholders = grepUnresolvedPlaceholders(html);
   report.staticChecks.internalDataLeak = grepInternalDataLeak(html, businessDir);
   report.staticChecks.jsHasRevealTimer = jsHasRevealTimer;
@@ -442,7 +466,7 @@ function summarize(report) {
   return problems;
 }
 
-module.exports = { run, summarize, runStaticChecks };
+module.exports = { run, summarize, runStaticChecks, resolveQaTarget };
 
 if (require.main === module) {
   var target = process.argv[2];
@@ -451,8 +475,7 @@ if (require.main === module) {
     process.exit(2);
   }
   var distDir = path.resolve(process.cwd(), target);
-  var slug = path.basename(distDir);
-  var outDir = process.argv[3] ? path.resolve(process.cwd(), process.argv[3]) : path.join(ROOT, "qa-output", slug);
+  var outDir = process.argv[3] ? path.resolve(process.cwd(), process.argv[3]) : resolveQaTarget(distDir).outDir;
 
   run(distDir, outDir)
     .then(function (report) {

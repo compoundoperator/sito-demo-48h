@@ -881,7 +881,8 @@ test("run reale con root e businessesRoot distinti: l'import scrive sotto busine
           assert.equal(fs.existsSync(path.join(rootA, "businesses")), false);
 
           // il preflight (dry-run) e l'esecuzione reale concordano sullo stesso percorso
-          assert.equal(path.join(businessesRootB, slug), previewBusinessDir);
+          // (canonico: su macOS os.tmpdir() è sotto /var, symlink di /private/var)
+          assert.equal(path.join(fs.realpathSync(businessesRootB), slug), previewBusinessDir);
 
           // source_file resta relativo a root (rootA), indipendente da businessesRoot (rootB)
           var writtenData = require("js-yaml").load(fs.readFileSync(path.join(businessesRootB, slug, "data.yaml"), "utf8"));

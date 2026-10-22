@@ -1,0 +1,9 @@
+/*
+  Layer del preset "default" (trades-v1) — solo colore, nessun layout.
+  Corregge il contrasto del marchio nel footer (INCREMENT-03): l'accento del
+  wordmark in --color-accent-base non raggiungeva 4.5:1 sul fondo inchiostro.
+*/
+
+.site-footer .wordmark span {
+  color: var(--color-gold);
+}

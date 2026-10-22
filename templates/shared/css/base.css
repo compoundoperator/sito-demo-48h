@@ -2,7 +2,7 @@
   Landing Factory — base condivisa (templates/shared/css/base.css)
   Font, token strutturali (non colore), reset, utility, chrome di pagina
   (header/nav, bottoni, whatsapp flottante, scroll-reveal, stampa).
-  I colori vivono nel preset (vedi templates/*/presets/*/tokens.css):
+  I colori vivono nel preset (vedi templates/<famiglia>/presets/<preset>/tokens.css):
   questo file usa solo var(--color-*) senza mai definirne i valori.
 */
 
