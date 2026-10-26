@@ -1,0 +1,43 @@
+/*
+  Layer del preset "default" (beauty-wellness-v1) — solo colore, nessun layout.
+  Corregge il contrasto del marchio (INCREMENT-03): l'accento del wordmark in
+  --color-accent-base non raggiungeva 4.5:1 né su --color-bg né sul footer.
+*/
+
+.wordmark span {
+  color: var(--color-accent);
+}
+
+.site-footer .wordmark span {
+  color: var(--color-gold);
+}
+
+/*
+  Schede "atmosfera" (INCREMENT-04) — solo colore: sfumature più scure e testo
+  bianco pieno senza trasparenza, per garantire 4.5:1 nel caso peggiore (ogni
+  colore della sfumatura e ogni pixel reale dietro al testo, blob incluso).
+*/
+
+.atmosfera-card {
+  --tone-a: var(--color-terracotta-deep);
+  --tone-b: var(--color-terracotta-darkest);
+}
+
+.atmosfera-card:nth-child(2) {
+  --tone-a: var(--color-atmosfera-tone2-b);
+  --tone-b: var(--color-ink);
+}
+
+.atmosfera-card:nth-child(3) {
+  --tone-a: var(--color-sage-deep);
+  --tone-b: var(--color-atmosfera-tone3-b);
+}
+
+.atmosfera-card h3,
+.atmosfera-card p {
+  color: var(--color-surface);
+}
+
+.atmosfera-card p {
+  opacity: 1;
+}

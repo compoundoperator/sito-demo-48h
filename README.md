@@ -146,7 +146,43 @@ npm run qa -- dist/<slug>
 npm run import:scaffold -- --file <csv> --list --priority high
 npm run import:scaffold -- --file <csv> --mapping <mapping.yaml> --row N
 npm run new-landing -- --business businesses/<slug> [--dry-run]   # tutta la catena in un comando
+npm run build -- businesses/<slug> --variants     # direzioni visive + portale locale (vedi sotto)
 ```
+
+## Direzioni visive e portale comparativo locale
+
+Per una famiglia che registra delle varianti (oggi solo
+`beauty-wellness-v1`: `trusted-classic`, `modern-premium`,
+`distinctive-bold`), un'unica attività può essere generata in tutte le
+direzioni visive insieme, più un portale che le mette a confronto:
+
+```bash
+npm run build -- businesses/luce-beauty-studio --variants
+# -> dist-variants/luce-beauty-studio/<preset>/   una variante completa per direzione
+# -> dist-variants/luce-beauty-studio/index.html  portale di confronto (desktop + mobile)
+
+npm run qa -- dist-variants/luce-beauty-studio/trusted-classic   # QA di una variante
+# -> qa-output/variants/luce-beauty-studio/trusted-classic/
+
+cd dist-variants/luce-beauty-studio && python3 -m http.server 8080
+# poi apri http://localhost:8080 (portale)
+```
+
+- Le direzioni non sono solo palette: ogni preset ha `tokens.css`
+  (colori) e `layer.css` (font, scala tipografica, spaziatura, raggi,
+  trattamento di hero, CTA e sezioni), concatenato **dopo** `base.css` e
+  `theme.css`. Solo i font locali Inter e Fraunces, con ruoli diversi
+  per direzione; nessun servizio esterno.
+- Preset, varianti, etichette e `theme_color` (che diventa il
+  `<meta name="theme-color">`) sono definiti solo in
+  `templates/registry.json` (`presets`, `variants`, `preset_meta`): un
+  preset non registrato o un percorso manipolato viene rifiutato.
+- `--variants` accetta solo una cartella reale direttamente sotto
+  `businesses/`, rifiuta la modalità `PRODUCTION` e produce sempre
+  pagine `noindex, nofollow`. L'output vive in `dist-variants/`
+  (gitignored), separato da `dist/`: la build standard resta identica.
+- **Solo uso locale**: non pubblicare né condividere l'URL del portale.
+  `noindex` non è un controllo di accesso.
 
 ## Comando unico: `npm run new-landing` (Operations V1)
 

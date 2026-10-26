@@ -1,0 +1,275 @@
+/*
+  Layer strutturale del preset "distinctive-bold" (beauty-wellness-v1).
+  Concatenato da scripts/build.js DOPO base.css e theme.css (vedi
+  trusted-classic/layer.css). Solo var(--color-*) del preset, mai un
+  colore letterale. Stesso HTML di ogni altra direzione.
+
+  Direzione: energica e memorabile. Inversione dei ruoli tipografici
+  (Inter 700 per i titoli, Fraunces per cifre, citazioni e marchio),
+  titolo hero molto grande, bordi spessi e ombre piene sfalsate, nessun
+  raggio, etichette come blocchi pieni, banda scura per "Perché noi".
+*/
+
+:root {
+  /* Ruoli invertiti: Inter per il display, Fraunces come voce d'accento. */
+  --font-display: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-body: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-accent: "Fraunces", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+
+  --fs-h1: clamp(2.5rem, 1.1rem + 6vw, 6rem);
+  --fs-h2: clamp(2rem, 1.25rem + 3.2vw, 3.75rem);
+  --fs-h3: clamp(1.25rem, 1.15rem + 0.5vw, 1.5rem);
+
+  --section-padding-y: 4.5rem;
+
+  --radius-card: 0;
+  --radius-pill: 0;
+  --radius-sm: 0;
+
+  --shadow-soft: 4px 4px 0 var(--color-ink);
+  --shadow-lift: 6px 6px 0 var(--color-ink);
+}
+
+@media (min-width: 768px) {
+  :root {
+    --section-padding-y: 6.5rem;
+  }
+}
+
+h1,
+h2 {
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 0.98;
+}
+
+h3 {
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  line-height: 1.15;
+}
+
+.wordmark {
+  font-family: var(--font-accent);
+  font-weight: 700;
+}
+
+.site-header.is-scrolled {
+  box-shadow: 0 2px 0 var(--color-ink);
+}
+
+/* Footer su inchiostro: l'accento del marchio passa al tono oro (contrasto AA). */
+.site-footer .wordmark span {
+  color: var(--color-gold);
+}
+
+/* ---------- Hero: banda colorata, disco pieno, titolo dominante ---------- */
+
+.hero__blob,
+.hero__pattern,
+.section-divider {
+  display: none;
+}
+
+.hero {
+  background: var(--color-bg-alt);
+  border-bottom: 2px solid var(--color-ink);
+  padding-top: var(--space-6);
+  padding-bottom: var(--space-7);
+}
+
+.hero::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  width: min(520px, 70vw);
+  aspect-ratio: 1;
+  right: -14%;
+  top: -16%;
+  border-radius: 50%;
+  background: var(--color-gold);
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.hero h1 {
+  max-width: 12ch;
+}
+
+.hero__eyebrow {
+  background: var(--color-ink);
+  color: var(--color-bg);
+  border-radius: 0;
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.hero__trust {
+  border-top: 2px solid var(--color-ink);
+}
+
+.hero__trust-item strong {
+  font-family: var(--font-accent);
+  font-weight: 700;
+  font-size: 2.25rem;
+  color: var(--color-accent);
+}
+
+.hero__visual {
+  border-radius: 0;
+  border: 2px solid var(--color-ink);
+  box-shadow: 10px 10px 0 var(--color-accent-base);
+  background: linear-gradient(155deg, var(--color-surface), var(--color-hero-visual-mid));
+}
+
+.hero__visual::before {
+  display: none;
+}
+
+.hero__visual::after {
+  background: radial-gradient(circle at 60% 40%, rgba(var(--color-shadow-rgb), 0.12), transparent 70%);
+}
+
+.hero__visual-label {
+  border: 2px solid var(--color-ink);
+}
+
+/* ---------- CTA: blocchi pieni con bordo e ombra sfalsata ---------- */
+
+.btn {
+  border: 2px solid var(--color-ink);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  box-shadow: 4px 4px 0 var(--color-ink);
+}
+
+.btn:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0 var(--color-ink);
+}
+
+.btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0 var(--color-ink);
+}
+
+.btn--primary {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.btn--primary:hover {
+  background: var(--color-accent-strong);
+  box-shadow: 6px 6px 0 var(--color-ink);
+}
+
+.btn--ghost {
+  background: var(--color-surface);
+  border-color: var(--color-ink);
+}
+
+/* ---------- Sezioni ---------- */
+
+/* .section-head .kicker: base.css applica `.section-head p { color: ink-soft }`
+   (specificità 0,1,1) che vincerebbe su `.kicker` (0,1,0) sul fondo magenta. */
+.kicker,
+.section-head .kicker {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  padding: 0.35em 0.8em;
+  letter-spacing: 0.1em;
+}
+
+.kicker::before {
+  display: none;
+}
+
+.service-card {
+  border: 2px solid var(--color-ink);
+  box-shadow: 6px 6px 0 var(--color-ink);
+}
+
+.service-card:hover {
+  transform: translate(-3px, -3px);
+  box-shadow: 9px 9px 0 var(--color-ink);
+  border-color: var(--color-ink);
+}
+
+.service-card__icon {
+  background: var(--color-gold);
+  color: var(--color-ink);
+  border-radius: 0;
+}
+
+.service-card__price {
+  font-family: var(--font-accent);
+}
+
+/* "Perché noi" come banda scura ad alto contrasto. */
+#perche-noi {
+  background: var(--color-ink);
+  color: var(--color-bg);
+}
+
+#perche-noi .kicker {
+  background: var(--color-gold);
+  color: var(--color-ink);
+}
+
+#perche-noi .why-item:not(:last-child) {
+  border-bottom-color: var(--color-footer-border);
+}
+
+#perche-noi .why-item p {
+  color: var(--color-bg);
+}
+
+#perche-noi .why-item__index {
+  font-family: var(--font-accent);
+  font-size: 3.5rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0;
+  color: var(--color-gold);
+}
+
+.atmosfera-card {
+  border: 2px solid var(--color-ink);
+  box-shadow: 6px 6px 0 var(--color-ink);
+}
+
+.review-card {
+  border: 2px solid var(--color-ink);
+  box-shadow: 4px 4px 0 var(--color-ink);
+}
+
+.review-card blockquote {
+  font-family: var(--font-accent);
+}
+
+.faq-item {
+  border: 2px solid var(--color-ink);
+}
+
+.contact-form-card {
+  border: 2px solid var(--color-ink);
+  box-shadow: 6px 6px 0 var(--color-ink);
+}
+
+.form-field input,
+.form-field textarea {
+  border: 2px solid var(--color-ink);
+}
+
+/* Schede "atmosfera" (INCREMENT-04): testo pieno senza trasparenza, solo colore. */
+
+.atmosfera-card h3,
+.atmosfera-card p {
+  color: var(--color-surface);
+}
+
+.atmosfera-card p {
+  opacity: 1;
+}

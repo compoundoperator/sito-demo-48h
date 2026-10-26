@@ -195,7 +195,9 @@ commerciale reale.
 - `main`
 - `claude/luce-beauty-landing-dpsrg9` (baseline del sito dimostrativo singolo originale)
 
-Tutto il lavoro sul generatore vive su `claude/landing-factory-v1`.
+Ogni nuovo lavoro sul generatore parte da `main` su una feature branch
+dedicata (`claude/<tema>`), mai direttamente su `main`;
+`claude/landing-factory-v1` è già confluita in `main` e non va più usata.
 
 ## Divieto di inventare dati
 

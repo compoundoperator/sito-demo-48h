@@ -1,0 +1,49 @@
+/*
+  Preset "trusted-classic" per beauty-wellness-v1 — palette "Blu notte &
+  Crema": rassicurante, ordinata, uso sobrio del colore. Stessi nomi di
+  variabile del preset "default" (i nomi della serie terracotta e sage sono
+  ruoli storici della famiglia, non descrizioni del colore): template e
+  theme restano invariati, cambiano solo i valori.
+*/
+
+:root {
+  --color-bg: #f7f5f0;
+  --color-bg-alt: #ebe6dc;
+  --color-surface: #ffffff;
+  --color-ink: #1b2430;
+  --color-ink-soft: #4a5462;
+  --color-terracotta: #2f5f80;
+  --color-terracotta-deep: #22496a;
+  --color-terracotta-darkest: #183650;
+  --color-sage: #5c6f60;
+  --color-sage-deep: #44564a;
+  --color-sage-tint: rgba(92, 111, 96, 0.12);
+  --color-gold: #c4a466;
+  --color-gold-deep: #6b5424;
+  --color-line: #d9d2c4;
+  --color-whatsapp: #25d366;
+  --color-whatsapp-deep: #1da851;
+
+  --color-on-terracotta: #ffffff;
+
+  --color-accent: var(--color-terracotta-deep);
+  --color-on-accent: var(--color-on-terracotta);
+  --color-accent-strong: var(--color-terracotta-darkest);
+  --color-accent-base: var(--color-terracotta);
+
+  /* Componenti RGB di --color-ink (#1b2430). */
+  --color-shadow-rgb: 27, 36, 48;
+
+  --color-header-scrolled-bg: rgba(247, 245, 240, 0.92);
+  --color-bg-translucent: rgba(247, 245, 240, 0.9);
+  --color-hero-visual-mid: #d6dee4;
+
+  --color-atmosfera-tone2-a: #5a6878;
+  --color-atmosfera-tone2-b: #3a4656;
+  --color-atmosfera-tone3-b: #44564a;
+
+  --color-footer-text: rgba(247, 245, 240, 0.84);
+  --color-footer-text-soft: rgba(247, 245, 240, 0.7);
+  --color-footer-text-dim: rgba(247, 245, 240, 0.62);
+  --color-footer-border: rgba(247, 245, 240, 0.14);
+}
