@@ -8,6 +8,10 @@ dist/
 # `npm run build -- businesses/<slug> --variants`): mai pubblicati
 dist-variants/
 
+# bundle delle preview protette (rigenerabili con
+# `npm run preview -- bundle --business businesses/<slug>`): mai committati
+dist-preview/
+
 # QA/screenshot/report generati localmente
 qa-output/
 *.qa-report.json

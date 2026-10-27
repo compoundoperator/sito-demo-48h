@@ -32,8 +32,17 @@ Questo file è una guida, **non sostituisce i controlli tecnici** in
 - `dist/` — output generato, **mai editato a mano**, rigenerabile con
   `npm run build`.
 - `.landing-factory/` — stato operativo locale di `scripts/new-landing.js`
-  (provenienza, lock di esecuzione), gitignored, mai contenuto
+  (provenienza, lock di esecuzione) e delle preview protette
+  (`preview-config.json`, `previews.json`), gitignored, mai contenuto
   cliente/dati personali/segreti.
+- `preview/worker/index.mjs` + `scripts/preview.js` — preview protetta
+  (INCREMENT-05): bundle locale in `dist-preview/<slug>/` (gitignored) per
+  Cloudflare Workers + Access. Il Worker verifica il JWT di Access a ogni
+  richiesta e fallisce chiuso; l'URL dei certificati è costruito solo dal
+  team domain validato (`<team>.cloudflareaccess.com`), mai configurabile.
+  Mai `PRODUCTION`, mai segreti nel repository; lo script non usa la rete e
+  nessun deploy/operazione Cloudflare avviene senza autorizzazione esplicita.
+  Vedi `docs/increments/INCREMENT-05-protected-preview.md`.
 
 ## Comandi principali
 
@@ -46,6 +55,7 @@ npm run qa -- dist/<slug>                         # screenshot + controlli autom
 npm run import:scaffold -- --file <csv> --list --priority high   # elenca righe per priorità
 npm run import:scaffold -- --file <csv> --mapping <m.yaml> --row N  # crea scaffold da riga CSV
 npm run new-landing -- --business businesses/<slug> [--dry-run]     # orchestra l'intera catena (Operations V1)
+npm run preview -- bundle --business businesses/<slug> [--expires-in-days N]  # pacchetto preview protetta (nessun deploy)
 ```
 
 Procedura completa passo-passo: vedi [README.md](./README.md). Guida

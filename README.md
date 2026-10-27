@@ -147,7 +147,26 @@ npm run import:scaffold -- --file <csv> --list --priority high
 npm run import:scaffold -- --file <csv> --mapping <mapping.yaml> --row N
 npm run new-landing -- --business businesses/<slug> [--dry-run]   # tutta la catena in un comando
 npm run build -- businesses/<slug> --variants     # direzioni visive + portale locale (vedi sotto)
+npm run preview -- bundle --business businesses/<slug> [--expires-in-days N]  # pacchetto preview protetta (vedi sotto)
+npm run preview -- revoke --slug <slug> | delete --slug <slug>
 ```
+
+## Preview protetta (INCREMENT-05)
+
+`npm run preview -- bundle` prepara in `dist-preview/<slug>/` (gitignored)
+un pacchetto per Cloudflare Workers: il sito `noindex` in `public/`, un
+Worker "gate" (`preview/worker/index.mjs`) e `wrangler.jsonc`. Online,
+Cloudflare Access ammette solo le email autorizzate (codice monouso); il
+Worker verifica comunque a ogni richiesta il JWT di Access (firma RS256,
+`iss`, `aud`, scadenza) e fallisce chiuso, oltre ad applicare scadenza
+(`--expires-in-days`, 1–30) e revoca (`revoke`). Solo `TEMPLATE_DEMO` e
+`PRIVATE_DEMO`; `PRODUCTION` è rifiutata. Nessun segreto nel repository:
+`.landing-factory/preview-config.json` (gitignored) contiene solo team
+domain e AUD. Lo script non usa mai la rete: deploy, account e
+configurazione Access restano passi manuali autorizzati a parte. Dettagli,
+threat model e rollback:
+[docs/increments/INCREMENT-05-protected-preview.md](./docs/increments/INCREMENT-05-protected-preview.md);
+procedura operatore: [RUNBOOK.md](./RUNBOOK.md).
 
 ## Direzioni visive e portale comparativo locale
 

@@ -11,7 +11,8 @@
     "optimize-images": "node scripts/optimize-images.js",
     "qa": "node scripts/qa-screenshots.js",
     "import:scaffold": "node scripts/import-csv.js",
-    "new-landing": "node scripts/new-landing.js"
+    "new-landing": "node scripts/new-landing.js",
+    "preview": "node scripts/preview.js"
   },
   "engines": {
     "node": ">=18"

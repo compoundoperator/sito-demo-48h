@@ -99,7 +99,7 @@ riprovare — il comando non lo fa mai da solo.
 | Modalità | Cosa significa | Chi la vede |
 |---|---|---|
 | **TEMPLATE_DEMO** | Attività completamente inventata, di esempio | Solo su tuo computer o in screenshot |
-| **PRIVATE_DEMO** | Attività reale, ma è ancora una bozza riservata al titolare, non ufficiale | Solo su tuo computer o in screenshot — mai un link pubblico |
+| **PRIVATE_DEMO** | Attività reale, ma è ancora una bozza riservata al titolare, non ufficiale | Solo su tuo computer, in screenshot o in una preview protetta (vedi sotto) — mai un link pubblico |
 | **PRODUCTION** | Attività reale, dati approvati dal cliente, pronta a essere pubblicata | Pubblicabile (ma questo progetto non pubblica nulla da solo — resta un passo manuale separato) |
 
 **Importante**: passare da una modalità all'altra non "abbellisce" mai i
@@ -121,6 +121,47 @@ ometterà semplicemente — non viene mai inventata.
   comando genera automaticamente una pagina indicizzabile — nessun passo
   manuale aggiuntivo serve per questo, ma **la pubblicazione vera e
   propria resta comunque un passo manuale separato, mai automatico**.
+
+## Preview protetta (INCREMENT-05)
+
+Una preview protetta è una copia online della landing che **solo le
+persone autorizzate** possono aprire. Il link, da solo, non basta: chi lo
+apre deve inserire la propria email (che deve essere nell'elenco
+autorizzato) e un codice monouso ricevuto per email. `noindex` non è un
+controllo di accesso e non viene usato come tale.
+
+Ammessa solo per `TEMPLATE_DEMO` e `PRIVATE_DEMO`: **mai `PRODUCTION`**.
+
+1. Preparazione locale (nessuna rete, nessun deploy).
+   1.1 Una sola volta, crea `.landing-factory/preview-config.json` con
+       esattamente queste due chiavi (sono identificativi, non password):
+       `{"access_team_domain": "<team>.cloudflareaccess.com", "access_aud": "<64 caratteri esadecimali>"}`.
+       Non scriverci mai token, password o altre chiavi: il comando le rifiuta.
+   1.2 Genera il pacchetto della preview:
+       `npm run preview -- bundle --business businesses/<slug> --expires-in-days 7`
+       (da 1 a 30 giorni; predefinito 7). Risultato: `dist-preview/<slug>/`.
+2. Pubblicazione protetta: **ogni passo richiede un'autorizzazione
+   esplicita separata** (nuovo account, credenziali, deploy esterno).
+   2.1 Account Cloudflare con Zero Trust Free e accesso via codice monouso.
+   2.2 `npx wrangler@<versione approvata> login`.
+   2.3 `npx wrangler@<versione approvata> deploy --config dist-preview/<slug>/wrangler.jsonc`.
+   2.4 Sul Worker: "Enable Cloudflare Access", policy limitata alle email
+       dei revisori, durata della sessione al massimo 24 ore.
+   2.5 Verifica: da una finestra anonima il link deve chiedere il login,
+       mai mostrare la pagina.
+3. Revoca.
+   3.1 Togli l'email dalla policy Access e usa "Revoke existing tokens".
+   3.2 Per chiudere la preview a tutti:
+       `npm run preview -- revoke --slug <slug>`, poi ripeti il deploy
+       (2.3): la pagina risponde "non più disponibile".
+4. Eliminazione.
+   4.1 `npx wrangler@<versione approvata> delete --name lf-preview-<slug>`.
+   4.2 `npm run preview -- delete --slug <slug>` (cancella il pacchetto
+       locale e lo registra come eliminato in `.landing-factory/previews.json`).
+   4.3 Elimina l'applicazione Access dal pannello Zero Trust.
+
+Il registro `.landing-factory/previews.json` contiene solo slug, nome del
+Worker, modalità, stato e date: mai email o altri dati personali.
 
 ## Come leggere un fallimento o un avviso
 
